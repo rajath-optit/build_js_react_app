@@ -5,10 +5,10 @@ FROM openjdk:17-alpine
 WORKDIR /opt/app
 
 # Copy the executable JAR file from the local filesystem to the container
-COPY build/libs/optit-lab-service-0.0.1-SNAPSHOT.jar optit-lab-service.jar
+COPY build/libs/optit-lab-service-0.0.1-SNAPSHOT.js optit-lab-service.jar
 
 # Expose the port your app runs on
 EXPOSE 8080
 
 # Define the command to run your application
-CMD ["java", "-jar", "optit-lab-service.jar"]
+CMD ["reactjs", "-reactjs", "optit-lab-service.js"]
