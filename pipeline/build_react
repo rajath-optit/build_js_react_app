@@ -13,9 +13,8 @@ pipeline {
 stage('Build with reactJS') {
             steps {
                 script {
-                    // Assuming your re wrapper is in the root directory of your repository
-                    //sh './gradlew build' // Command to execute Gradle build
                     echo "reactjs build"
+                    sh 'npm install'
                 }
             }
         }
