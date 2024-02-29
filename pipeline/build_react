@@ -10,7 +10,7 @@ pipeline {
                 }
             } 
         }
-stage('Build with reactJS') {
+stage('Build reactJS') {
             steps {
                 script {
                     echo "reactjs build"
