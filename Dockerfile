@@ -1,14 +1,23 @@
-# Use the official OpenJDK image for Java 17 as the base image
-FROM openjdk:17-alpine
+# Use an official Node.js runtime as a parent image
+FROM node:14-alpine
 
-# Set the working directory in the container
-WORKDIR /opt/app
+# Set the working directory to /app
+WORKDIR /app
 
-# Copy the executable JAR file from the local filesystem to the container
-COPY build/libs/optit-lab-service-0.0.1-SNAPSHOT.js optit-lab-service.jar
+# Copy package.json and package-lock.json to the working directory
+COPY package*.json ./
 
-# Expose the port your app runs on
+# Install app dependencies
+RUN npm install
+
+# Copy the current directory contents to the container at /app
+COPY . .
+
+# Expose port 8080
 EXPOSE 8080
 
-# Define the command to run your application
-CMD ["reactjs", "-reactjs", "optit-lab-service.js"]
+# Define environment variable
+ENV REACT_APP_API_URL=http://api.example.com
+
+# Run npm start when the container launches
+CMD ["npm", "start"]
