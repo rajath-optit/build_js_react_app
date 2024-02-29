@@ -18,5 +18,9 @@ stage('Build reactJS') {
                 }
             }
         }
+            script {
+                    echo 'Creating Docker image...'
+                    sh "docker build -t your-docker-image-name ."
+                }
     }
 }
