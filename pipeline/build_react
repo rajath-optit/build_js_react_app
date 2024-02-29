@@ -5,8 +5,8 @@ pipeline {
             steps { 
                 script { 
                     git branch: branch_or_tag, 
-                        credentialsId: 'git-PAT', // Provide your credentials ID
-                        url: ' ' // Provide your Git repository URL
+                        credentialsId: 'rajath-my-git-pat', // Provide your credentials ID
+                        url: 'https://github.com/rajath-optit/build_js_react_app.git' // Provide your Git repository URL
                 }
             } 
         }
