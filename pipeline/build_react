@@ -1,16 +1,17 @@
-pipeline { 
+pipeline {
     agent any 
-    stages { 
+    stages {
         stage('Git Checkout') { 
             steps { 
                 script { 
-                    git branch: branch_or_tag, 
-                        credentialsId: 'rajath-my-git-pat', // Provide your credentials ID
-                        url: 'https://github.com/rajath-optit/build_js_react_app.git' // Provide your Git repository URL
+                    git branch: 'master', // Replace with your desired branch
+                        credentialsId: 'rajath-my-git-pat',
+                        url: 'https://github.com/rajath-optit/build_js_react_app.git'
                 }
             } 
         }
-stage('Build reactJS') {
+
+        stage('Build reactJS') {
             steps {
                 script {
                     echo "reactjs build"
@@ -18,9 +19,14 @@ stage('Build reactJS') {
                 }
             }
         }
-            script {
+
+        stage('Build Docker Image') {
+            steps {
+                script {
                     echo 'Creating Docker image...'
                     sh "docker build -t raorajath/build_js_react_app:latest ."
                 }
+            }
+        }
     }
 }
