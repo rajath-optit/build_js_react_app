@@ -20,7 +20,7 @@ stage('Build reactJS') {
         }
             script {
                     echo 'Creating Docker image...'
-                    sh "docker build -t your-docker-image-name ."
+                    sh "docker build -t raorajath/build_js_react_app:latest ."
                 }
     }
 }
