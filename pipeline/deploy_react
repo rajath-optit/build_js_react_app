@@ -10,5 +10,23 @@ pipeline {
                 }
             } 
         }
+    stage('Deploy to Kubernetes') {
+            steps {
+                script {
+                    sh 'kubectl apply -f kubernetes/manifest/reactjs_deployment.yaml -n $K8S_NAMESPACE'
+                    echo 'Applying Kubernetes Service...'
+                    sh 'kubectl apply -f kubernetes/manifest/reactjs_service.yaml -n $K8S_NAMESPACE'
+                
+                }
+            }
+        }
+    stage('Cleanup') {
+            steps {
+                script {
+                    echo 'Cleaning up unused Docker images...'
+                    sh 'docker system prune -f'
+                }
+            }
+        }
     }
 }

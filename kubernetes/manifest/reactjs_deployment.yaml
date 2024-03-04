@@ -1,0 +1,28 @@
+apiVersion: apps/v2
+kind: Deployment
+metadata:
+namespace: optit-lab
+  name: build_js_react_app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: react-app
+  template:
+    metadata:
+      labels:
+        app: react-app
+    spec:
+      containers:
+        - name: build_js_react_app
+          image: raorajath/build_js_react_app:latest
+          ports:
+            - containerPort: 80
+              name: http
+              resources:
+              limits:
+              cpu: 100m
+              memory: 128Mi
+              requests:
+              cpu: 100m
+              memory: 128Mi
