@@ -24,7 +24,7 @@ pipeline {
             steps {
                 script {
                     echo 'Creating Docker image...'
-                    sh "docker build -t raorajath/build_js_react_app:version1.0 ."
+                    sh "docker build -t bharathoptdocker/rectjs:latest ."
                 }
             }
         }
