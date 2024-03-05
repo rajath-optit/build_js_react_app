@@ -15,6 +15,6 @@ spec:
     spec:
       containers:
       - name: optit-lab-react-container
-        image: raorajath/build_js_react_app:latest  
+        image: raorajath/build_js_react_app:version1.0  
         ports:
         - containerPort: 80
