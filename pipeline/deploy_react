@@ -13,7 +13,7 @@ pipeline {
     stage('Deploy to Kubernetes') {
             steps {
                 script {withCredentials([file(credentialsId: 'poc-kube-cluster-cred', variable: 'KUBECONFIG')]) {
-                    sh 'mkdir -p $HOME/.kube/ && cat $KUBECONFIG > $HOME/.kube/config'
+                    sh 'mkdir -p home/optit/.kube/ && cat $KUBECONFIG > home/optit/.kube/config'
                     sh 'kubectl apply -f kubernetes/manifest/reactjs_deployment.yaml -n $optit-lab-react'
                     echo 'Applying Kubernetes Service...'
                     sh 'kubectl apply -f kubernetes/manifest/reactjs_service.yaml -n $optit-lab-react'
