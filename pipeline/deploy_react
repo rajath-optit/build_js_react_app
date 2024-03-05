@@ -12,13 +12,14 @@ pipeline {
         }
     stage('Deploy to Kubernetes') {
             steps {
-                script {withCredentials([file(credentialsId: 'poc-kube-cluster-cred', variable: 'KUBECONFIG')]) {
-                    sh 'mkdir -p home/optit/.kube/ && cat $KUBECONFIG > home/optit/.kube/config'
-                    sh 'kubectl apply -f kubernetes/manifest/reactjs_deployment.yaml -n $optit-lab-react'
-                    echo 'Applying Kubernetes Service...'
-                    sh 'kubectl apply -f kubernetes/manifest/reactjs_service.yaml -n $optit-lab-react'
+                script { withCredentials([file(credentialsId: 'poc-kube-cluster-cred', variable: 'KUBECONFIG')]) {
+                sh 'mkdir -p $HOME/.kube/ && cat $KUBECONFIG > $HOME/.kube/config'
+                // Deploying the Kubernetes resources to the specified namespace
+                sh 'kubectl apply -f kubernetes/manifest/reactjs_deployment.yaml --namespace=optit-lab-react'
+                echo 'Applying Kubernetes Service...'
+                sh 'kubectl apply -f kubernetes/manifest/reactjs_service.yaml --namespace=optit-lab-react'
                     }
-                }
+                }        
             }
         }
     stage('Cleanup') {
