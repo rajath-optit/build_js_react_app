@@ -29,6 +29,15 @@ pipeline {
             }
         }
 
+        stage('Docker Login') {
+            steps {
+                script {
+                    echo 'Logging in to Docker registry...'
+                    sh "docker login -u YOUR_DOCKER_USERNAME -p YOUR_DOCKER_PASSWORD"
+                }
+            }
+        }
+
         stage('Docker Run') {
             steps {
                 script {
