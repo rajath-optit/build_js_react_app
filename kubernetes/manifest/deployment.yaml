@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: optit-lab-react-deployment
-  namespace: optit-lab-react
+  namespace: devopskubectl01
 spec:
   replicas: 3 
   selector:
