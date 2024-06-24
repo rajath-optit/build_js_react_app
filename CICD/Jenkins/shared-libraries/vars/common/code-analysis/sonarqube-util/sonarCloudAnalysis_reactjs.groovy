@@ -1,7 +1,7 @@
 def performSonarCloudAnalysisforReactjs(String projectKey, String organization, String sourcesDir, String sonarCloudTokenId) {
     def scannerHome = tool 'mysonar' // Use the name of your SonarQube installation
     println "Using SonarQube scanner from: ${scannerHome}"
-    def sonarCloudToken = credentials(sonarCloudTokenId)
+    def sonarCloudToken = credentials(sonarCloudTokenId).replaceAll("[\n\r]", "") // Remove any newline characters
 
     // Debug output
     println "Project Key: ${projectKey}"
@@ -11,15 +11,15 @@ def performSonarCloudAnalysisforReactjs(String projectKey, String organization, 
 
     // Run the SonarCloud analysis
     withSonarQubeEnv('SonarCloud') {
-        sh """
-            ${scannerHome}/bin/sonar-scanner \
-            -Dsonar.projectKey=${projectKey} \
-            -Dsonar.organization=${organization} \
-            -Dsonar.sources=${sourcesDir} \
-            -Dsonar.host.url=https://sonarcloud.io \
-            -Dsonar.login=${sonarCloudToken} \
-            -X
-        """
+        def scannerCmd = "${scannerHome}/bin/sonar-scanner " +
+                         "-Dsonar.projectKey=${projectKey} " +
+                         "-Dsonar.organization=${organization} " +
+                         "-Dsonar.sources=${sourcesDir} " +
+                         "-Dsonar.host.url=https://sonarcloud.io " +
+                         "-Dsonar.login=${sonarCloudToken} " +
+                         "-X"
+
+        sh(script: scannerCmd, returnStatus: true) // Execute the scanner command and capture return status
     }
 }
 
