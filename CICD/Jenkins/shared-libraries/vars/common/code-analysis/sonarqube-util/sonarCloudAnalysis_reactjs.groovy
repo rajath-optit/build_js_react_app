@@ -1,4 +1,4 @@
-def sonarCloudAnalysis(String projectKey, String organization, String sourcesDir, String sonarCloudToken) {
+def performSonarCloudAnalysisforReactjs(String projectKey, String organization, String sourcesDir, String sonarCloudToken) {
  
   def scannerHome = tool 'mysonar' // Use the name of your SonarQube installation
   println "Using SonarQube scanner from: ${scannerHome}"
