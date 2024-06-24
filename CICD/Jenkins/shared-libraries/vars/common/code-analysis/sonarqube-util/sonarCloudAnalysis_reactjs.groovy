@@ -1,7 +1,17 @@
+import com.cloudbees.plugins.credentials.CredentialsProvider
+import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials
+
 def performSonarCloudAnalysisforReactjs(String projectKey, String organization, String sourcesDir, String sonarCloudTokenId) {
     def scannerHome = tool 'mysonar' // Use the name of your SonarQube installation
     println "Using SonarQube scanner from: ${scannerHome}"
-    def sonarCloudToken = credentials(sonarCloudTokenId).replaceAll("[\n\r]", "") // Remove any newline characters
+    
+    // Retrieve SonarCloud token from Jenkins credentials
+    def credentials = CredentialsProvider.findCredentialById(sonarCloudTokenId, StandardUsernamePasswordCredentials.class, Jenkins.instance, [])
+    if (credentials == null) {
+        error "Could not find credentials with ID: ${sonarCloudTokenId}"
+        return
+    }
+    def sonarCloudToken = credentials.password
 
     // Debug output
     println "Project Key: ${projectKey}"
