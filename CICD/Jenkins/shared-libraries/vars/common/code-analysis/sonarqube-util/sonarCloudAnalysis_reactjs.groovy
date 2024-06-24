@@ -1,3 +1,4 @@
+def performSonarCloudAnalysisforReactjs(String projectKey, String organization, String sourcesDir, String sonarCloudTokenId) {
 def scannerHome = tool name: 'SonarQubeScanner', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
     withSonarQubeEnv('SonarQube') {
         sh """
@@ -8,4 +9,5 @@ def scannerHome = tool name: 'SonarQubeScanner', type: 'hudson.plugins.sonar.Son
             -Dsonar.login=${env.SONAR_LOGIN}
         """
     }
+}
 return this
