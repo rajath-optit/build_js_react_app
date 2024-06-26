@@ -39,9 +39,9 @@ pipeline {
                     
                     // Load specific scripts
                     gitCheckoutScript = loadScript('scm-util', 'git', 'GitCheckout')
-                    sonarScript = loadScript('codeAnalysis', 'PerformSonarAnalysisForReactjs')
-                    dockerBuildScript = loadScript('dockerUtil', 'DockerUtil')
-                    dockerPublishScript = loadScript('containerPublish', 'DockerHubPublish')
+                    sonarScript = loadScript('codeAnalysis','' 'PerformSonarAnalysisForReactjs')
+                    dockerBuildScript = loadScript('dockerUtil','' 'DockerUtil')
+                    dockerPublishScript = loadScript('containerPublish','' 'DockerHubPublish')
                     
                     // Example of loading from src directory
                     buildWithNpmScript = load("${baseDir}/src/org/common/build/BuildWithNpm.groovy")
