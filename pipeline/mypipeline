@@ -25,27 +25,27 @@ pipeline {
     }
     
     stages {
-        stage('Load Scripts') {
+          stage('Load Scripts') {
             steps {
                 script {
                     // Define baseDir for Jenkins shared libraries
                     def baseDir = "${env.WORKSPACE}/Jenkins/shared-libraries"
-                    
+
                     // Load scripts using dynamically constructed paths
                     def loadScript = { type, technology, scriptName ->
-                        def scriptPath = "${baseDir}/vars/common/$path/${scriptName}.groovy"
+                        def scriptPath = "${baseDir}/${type}/${technology}/${scriptName}.groovy"
                         return load(scriptPath)
                     }
-                    
-                    // Load specific scripts
-                    gitCheckoutScript = loadScript('scm-util/git', 'GitCheckout')
-                    sonarScript = loadScript('codeAnalysis', 'PerformSonarAnalysisForReactjs')
-                    dockerBuildScript = loadScript('dockerUtil', 'DockerUtil')
-                    dockerPublishScript = loadScript('containerPublish','DockerHubPublish')
-                    
-                    // Example of loading from src directory
-                    buildWithNpmScript = load("${baseDir}/src/org/common/build/BuildWithNpm.groovy")
-                    unitTestWithNpmScript = load("${baseDir}/src/org/common/unitTest/UnitTestWithNpm.groovy")
+
+                    // Load scripts from 'vars' directory
+                    gitCheckoutScript = loadScript('vars/common/scm-util', 'git', 'GitCheckout')
+                    sonarScript = loadScript('vars/common', 'codeAnalysis', 'PerformSonarAnalysisForReactjs')
+                    dockerBuildScript = loadScript('vars/common', 'dockerUtil', 'DockerUtil')
+                    dockerPublishScript = loadScript('vars/common', 'containerPublish', 'DockerHubPublish')
+
+                    // Load scripts from 'src' directory
+                    buildWithNpmScript = loadScript('src/org/common', 'build', 'BuildWithNpm')
+                    unitTestWithNpmScript = loadScript('src/org/common', 'unitTest', 'UnitTestWithNpm')
                 }
             }
         }
