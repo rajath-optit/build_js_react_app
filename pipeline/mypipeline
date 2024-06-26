@@ -1,6 +1,6 @@
 pipeline {
     agent any
-    
+
     stages {
         stage('Load Scripts') {
             steps {
@@ -12,6 +12,9 @@ pipeline {
                     def dockerPublishScript = load 'Jenkins/shared-libraries/vars/common/containerPublish/DockerHubPublish.groovy'
                     def buildWithNpmScript = load 'Jenkins/shared-libraries/src/org/common/build/BuildWithNpm.groovy'
                     def unitTestWithNpmScript = load 'Jenkins/shared-libraries/src/org/common/unitTest/UnitTestWithNpm.groovy'
+
+                    // Load common stages script
+                    def commonStagesScript = load 'Jenkins/shared-libraries/vars/common/pipelineConfig/common-stages.groovy'
 
                     // Call the common stages script
                     commonStagesScript.call(
