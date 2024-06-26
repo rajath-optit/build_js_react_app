@@ -1,0 +1,61 @@
+pipeline {
+    agent any
+    
+    parameters {
+        // Load parameters from buildPipelineParameters.groovy
+        script {
+            def pipelineParams = load 'Jenkins/shared-libraries/vars/common/pipelineConfig/buildPipelineParameters.groovy'
+            
+            // Define parameters dynamically
+            pipelineParams.each { param ->
+                if (param.value instanceof String) {
+                    string(name: param.key, defaultValue: param.value, description: param.description)
+                } else if (param.value instanceof hudson.util.Secret) {
+                    credentials(name: param.key, defaultValue: param.value, description: param.description)
+                }
+            }
+        }
+    }
+    
+    stages {
+        stage('Load Scripts') {
+            steps {
+                script {
+                    // Define baseDir for Jenkins shared libraries
+                    def baseDir = "${env.WORKSPACE}/Jenkins/shared-libraries"
+                    
+                    // Load scripts using dynamically constructed paths
+                    def loadScript = { type, technology, scriptName ->
+                        def scriptPath = "${baseDir}/vars/common/${type}/${technology}/${scriptName}.groovy"
+                        return load(scriptPath)
+                    }
+                    
+                    // Load specific scripts
+                    gitCheckoutScript = loadScript('scm-util', 'git', 'GitCheckout')
+                    sonarScript = loadScript('codeAnalysis', 'PerformSonarAnalysisForReactjs')
+                    dockerBuildScript = loadScript('dockerUtil', 'DockerUtil')
+                    dockerPublishScript = loadScript('containerPublish', 'DockerHubPublish')
+                    
+                    // Example of loading from src directory
+                    buildWithNpmScript = load("${baseDir}/src/org/common/build/BuildWithNpm.groovy")
+                    unitTestWithNpmScript = load("${baseDir}/src/org/common/unitTest/UnitTestWithNpm.groovy")
+                }
+            }
+        }
+        
+        // Include common stages from common-stages.groovy
+        stage('Common Stages') {
+            steps {
+                script {
+                    load "${env.WORKSPACE}/Jenkins/shared-libraries/vars/common/pipelineConfig/common-stages.groovy"
+                }
+            }
+        }
+    }
+    
+    post {
+        always {
+            echo 'Pipeline execution completed.'
+        }
+    }
+}
