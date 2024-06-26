@@ -49,12 +49,14 @@ pipeline {
                 }
             }
         }
-        
-        // Include common stages from common-stages.groovy
+       // Include common stages from common-stages.groovy
         stage('Common Stages') {
             steps {
                 script {
-                    load "${env.WORKSPACE}/Jenkins/shared-libraries/vars/common/pipelineConfig/common-stages.groovy"
+                    // Load common stages script and execute its function
+                    def commonStages = load "${env.WORKSPACE}/Jenkins/shared-libraries/vars/common/pipelineConfig/common-stages.groovy"
+                    
+                    commonStages.executeCommonStages(gitCheckoutScript, sonarScript, dockerBuildScript, dockerPublishScript, buildWithNpmScript, unitTestWithNpmScript, params)
                 }
             }
         }
