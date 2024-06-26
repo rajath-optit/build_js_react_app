@@ -33,15 +33,15 @@ pipeline {
                     
                     // Load scripts using dynamically constructed paths
                     def loadScript = { type, technology, scriptName ->
-                        def scriptPath = "${baseDir}/vars/common/${type}/${technology}/${scriptName}.groovy"
+                        def scriptPath = "${baseDir}/vars/common/$path/${scriptName}.groovy"
                         return load(scriptPath)
                     }
                     
                     // Load specific scripts
-                    gitCheckoutScript = loadScript('scm-util', 'git', 'GitCheckout')
-                    sonarScript = loadScript('codeAnalysis','' 'PerformSonarAnalysisForReactjs')
-                    dockerBuildScript = loadScript('dockerUtil','' 'DockerUtil')
-                    dockerPublishScript = loadScript('containerPublish','' 'DockerHubPublish')
+                    gitCheckoutScript = loadScript('scm-util/git', 'GitCheckout')
+                    sonarScript = loadScript('codeAnalysis', 'PerformSonarAnalysisForReactjs')
+                    dockerBuildScript = loadScript('dockerUtil', 'DockerUtil')
+                    dockerPublishScript = loadScript('containerPublish','DockerHubPublish')
                     
                     // Example of loading from src directory
                     buildWithNpmScript = load("${baseDir}/src/org/common/build/BuildWithNpm.groovy")
