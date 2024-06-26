@@ -1,50 +1,56 @@
-// Jenkins/shared-libraries/vars/common/pipelineConfig/common-stages.groovy
-
-def executeCommonStages(gitCheckoutScript, sonarScript, dockerBuildScript, dockerPublishScript, buildWithNpmScript, unitTestWithNpmScript, params) {
-    stage('Git Checkout Source Code Repo') {
-        steps {
-            script {
-                gitCheckoutScript.gitCheckout(params.SOURCE_CODE_BRANCH_NAME, params.GIT_SOURCE_CODE_URL, params.GIT_SOURCE_CODE_CREDENTIAL)
-            }
-        }
-    }
-
+def buildStage(language) {
     stage('Build') {
         steps {
             script {
-                buildWithNpmScript.build()
+                if (language == 'js') {
+                    CommonPipelineFunctions.buildWithNpm()
+                } else if (language == 'java') {
+                    CommonPipelineFunctions.buildWithMaven()
+                }
             }
         }
     }
+}
 
+def unitTestStage(language) {
     stage('Unit Test') {
         steps {
             script {
-                unitTestWithNpmScript.uniTest()
+                if (language == 'js') {
+                    CommonPipelineFunctions.unitTestWithNpm()
+                } else if (language == 'java') {
+                    CommonPipelineFunctions.unitTestWithMaven()
+                }
             }
         }
     }
+}
 
+def sonarQubeStage(projectKey, organization, sourcesDir, sonarTokenId) {
     stage('SonarQube Analysis') {
         steps {
             script {
-                sonarScript.performSonarCloudAnalysis(params.SONAR_PROJECT_KEY, params.SONAR_ORGANIZATION, params.SONAR_SOURCES_DIR, params.SONAR_TOKEN)
+                CommonPipelineFunctions.performSonarCloudAnalysis(projectKey, organization, sourcesDir, sonarTokenId)
             }
         }
     }
+}
 
+def dockerBuildStage(imageName, imageTag) {
     stage('Docker Build') {
         steps {
             script {
-                dockerBuildScript.dockerBuild(params.DOCKER_IMAGE_NAME, params.DOCKER_IMAGE_TAG)
+                CommonPipelineFunctions.dockerBuild(imageName, imageTag)
             }
         }
     }
+}
 
+def dockerPublishStage(imageName, dockerRepo, imageTag, dockerCredential) {
     stage('Docker Publish') {
         steps {
             script {
-                dockerPublishScript.publishToContainer(params.DOCKER_IMAGE_NAME, params.DOCKER_REPO, params.DOCKER_IMAGE_TAG, params.DOCKER_CREDENTIAL)
+                CommonPipelineFunctions.publishToContainer(imageName, dockerRepo, imageTag, dockerCredential)
             }
         }
     }
