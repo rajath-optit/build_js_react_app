@@ -2,9 +2,7 @@ pipeline {
     agent any
     
     parameters {
-        string(name: 'DSL_GIT_URL', description: 'Git repository URL for shared library')
-        string(name: 'DSL_BRANCH_NAME', description: 'Shared Library Branch')
-        credentials(name: 'GIT_DSL_CREDENTIAL', description: 'Jenkins credential for shared library Git repo', required: true)
+    
         string(name: 'GIT_SOURCE_CODE_URL', description: 'Git repository URL for source code')
         string(name: 'SOURCE_CODE_BRANCH_NAME', description: 'Source Code Branch to build')
         credentials(name: 'GIT_SOURCE_CODE_CREDENTIAL', description: 'Jenkins credential for source code Git repo', required: true)
@@ -16,11 +14,7 @@ pipeline {
         string(name: 'SONAR_ORGANIZATION', description: 'SonarQube organization key')
         string(name: 'SONAR_SOURCES_DIR', description: 'Source code directory for SonarQube analysis')
         credentials(name: 'SONAR_TOKEN', description: 'SonarQube authentication token', required: true)
-        string(name: 'SONAR_SCANNER_HOME', description: 'SonarQube scanner tool name')
-        string(name: 'SONAR_ENV_NAME', description: 'SonarQube environment name')
-        string(name: 'SONAR_HOST_URL', description: 'SonarQube server URL')
-        string(name: 'SONAR_LANGUAGE', description: 'Programming language of the project')
-        string(name: 'SONAR_EXCLUSIONS', description: 'Files to exclude from SonarQube analysis')
+       
     }
 
     stages {
