@@ -1,8 +1,5 @@
 @Library('shared-libraries') _
 
-def gitCheckoutScript
-def kubernetesDeployScript
-
 pipeline {
     agent any
 
