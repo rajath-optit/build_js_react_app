@@ -1,6 +1,6 @@
-package org.common.UniTest
+package org.common.unitTest
 
-def uniTest() {
+def unitTest() {
     withEnv(["GRADLE_OPTS=-Dorg.gradle.daemon=false"]) {
         echo 'Unit test with Gradle...'
         sh './gradlew test'
