@@ -34,7 +34,7 @@ Create chart name and version as used by the chart label.
 Common labels
 */}}
 {{- define "reactjs.labels" -}}
-helm.sh/chart: {{ include "optit-lab-service.chart" . }}
+helm.sh/chart: {{ include "reactjs.chart" . }}
 {{ include "reactjs.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
