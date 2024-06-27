@@ -1,6 +1,6 @@
-package org.common.uniTest
+package org.common.unitTest
 
-def uniTest() {
+def unitTest() {
     echo 'Unit test with Maven...'
     sh 'mvn test'
 }
