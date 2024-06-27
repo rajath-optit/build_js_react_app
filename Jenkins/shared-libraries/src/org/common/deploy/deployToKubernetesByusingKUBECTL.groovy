@@ -1,5 +1,5 @@
 package org.common.deploy
-def deployToKubernetesByusingKUBECTL(kubeConfig, namespace, manifestPath) {
+def deploy(kubeConfig, namespace, manifestPath) {
   echo "Kubeconfig: ${kubeConfig}"
   echo "Namespace: ${namespace}"
   echo "Manifest File Path: ${manifestPath}"
