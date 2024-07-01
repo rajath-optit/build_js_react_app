@@ -53,7 +53,7 @@ pipeline {
                 values.put('ansiblePlaybook', ansiblePlaybook)
                 values.put('ansibleExtraArgs', ansibleExtraArgs)
                 println values
-                ansiblePlaybookScript.ansible_playbook_run(values)
+                ansiblePlaybookScript.playbook(values)
                 currentBuild.result = 'SUCCESS'
                 currentBuild.description = "Private: ${params.private_branch}"
             }
