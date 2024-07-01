@@ -20,9 +20,9 @@ def playbook(Map pipelineParams) {
                     checkout scm: [$class: 'GitSCM', branches: [[name: private_repo_branch]], extensions: [[$class: 'CloneOption', depth: 1, noTags: true, reference: '', shallow: true]], userRemoteConfigs: [[credentialsId: private_repo_credentials, url: private_repo_url]]]
                 }
 
-                inventory_path = "${pipelineParams.currentWs}/ansible/inventory"
+                inventory_path = "${pipelineParams.currentWs}/ansible"
                 sh """
-                        rsync -Lkr ${pipelineParams.currentWs}/ansible/inventory/* ${pipelineParams.currentWs}/ansible/inventory/
+                        rsync -Lkr ${pipelineParams.currentWs}/ansible/* ${pipelineParams.currentWs}/ansible/
                         ansible-playbook -i ${inventory_path}/hosts $pipelineParams.ansiblePlaybook 
                         //ansible-playbook -i ${inventory_path}/hosts $pipelineParams.ansiblePlaybook $pipelineParams.ansibleExtraArgs
                      """
