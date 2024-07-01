@@ -50,7 +50,7 @@ pipeline {
                         private_repo_branch: params.private_repo_branch,
                         private_repo_credentials: params.private_repo_credentials,
                         private_branch: params.private_branch,
-                        currentWs: sh(returnStdout: true, script: 'pwd').trim(),
+                        currentWs: pwd(),
                         ansiblePlaybook: "${currentWs}/ansible/test.yml",
                         ansibleExtraArgs: "--vault-password-file /var/lib/jenkins/secrets/vault-pass -v"
                     ]
