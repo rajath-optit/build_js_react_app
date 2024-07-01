@@ -4,13 +4,13 @@ pipeline {
     agent any
 
     parameters {
-        string(name: 'GIT_URL', description: 'Git repository URL contains playbook')
-        string(name: 'GIT_BRANCH_NAME', description: 'Git Branch name')
+        string(name: 'GIT_URL', description: 'Git repository URL contains playbook', , defaultValue: 'https://github.com/bharathkoptit/build_js_react_app.git')
+        string(name: 'GIT_BRANCH_NAME', description: 'Git Branch name', , defaultValue: 'master')
         credentials(name: 'GIT_CREDENTIAL', description: 'Jenkins credential for Git repo', required: true)
-        //string(name: 'PLAYBOOK_PATH', description: 'Ansible Playbook to deploy')
-        string(name: 'private_repo_url', description: 'Private Repo URL - Secrets Store')
-        string(name: 'private_repo_branch ', description: 'Private Repo Branch')
-        string(name: 'private_repo_credentials', description: 'Private Repo Credential')
+        //string(name: 'PLAYBOOK_PATH', description: 'Ansible Playbook to deploy', , defaultValue: '')
+        string(name: 'private_repo_url', description: 'Private Repo URL - Secrets Store', , defaultValue: 'https://github.com/bharathkoptit/build_js_react_app.git')
+        string(name: 'private_repo_branch ', description: 'Private Repo Branch', , defaultValue: 'master')
+        credentials(name: 'private_repo_credentials', description: 'Private Repo Credential', required: true)
         }
 
     stages {
