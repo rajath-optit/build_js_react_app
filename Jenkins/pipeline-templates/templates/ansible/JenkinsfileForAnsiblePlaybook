@@ -41,6 +41,8 @@ pipeline {
             }
         }
        stage('deploy') {
+            steps {
+               script {
                 values = [:]
                 currentWs = sh(returnStdout: true, script: 'pwd').trim()
                 jobName = sh(returnStdout: true, script: "echo $JOB_NAME").split('/')[-1].trim()
@@ -54,6 +56,8 @@ pipeline {
                 ansiblePlaybookScript.ansible_playbook_run(values)
                 currentBuild.result = 'SUCCESS'
                 currentBuild.description = "Private: ${params.private_branch}"
+            }
+          }
        }
     }
 }
