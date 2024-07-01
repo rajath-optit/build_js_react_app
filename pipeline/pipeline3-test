@@ -2,10 +2,12 @@
 
 pipeline {
     agent any
-parameters {
+
+    parameters {
         common.pipelineConfig.buildPipelineParameters().each { p ->
             parameter(p)
         }
+    }
 
     stages {
         stage('Load Scripts') {
