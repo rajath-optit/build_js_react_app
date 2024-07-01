@@ -1,5 +1,5 @@
 def playbook(Map pipelineParams) {
-    try {
+
             stage('ansible-run') {
                 println pipelineParams
                 dir("$pipelineParams.currentWs") {
@@ -28,8 +28,3 @@ def playbook(Map pipelineParams) {
                      """
             }
         }
-    }
-    catch (err){
-        throw err
-    }
-}
