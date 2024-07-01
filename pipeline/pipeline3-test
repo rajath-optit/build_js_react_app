@@ -4,9 +4,8 @@ pipeline {
     agent any
 
     parameters {
-        common.pipelineConfig.buildPipelineParameters().each { p ->
-            parameter(p)
-        }
+        // Define parameters directly, not within each loop
+        common.pipelineConfig.buildPipelineParameters()
     }
 
     stages {
