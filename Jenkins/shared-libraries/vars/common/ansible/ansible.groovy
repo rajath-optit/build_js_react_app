@@ -1,4 +1,4 @@
-def call(Map pipelineParams) {
+def playbook(Map pipelineParams) {
 
             stage('ansible-run') {
                 println pipelineParams
@@ -28,3 +28,4 @@ def call(Map pipelineParams) {
                      """
             }
         }
+return this
