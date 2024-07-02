@@ -25,7 +25,7 @@ pipeline {
 
                     // Load scripts from 'vars' directory
                     gitCheckoutScript = loadScript('vars/common/scm-util', 'git', 'GitCheckout')
-                    ansiblePlaybookScript = loadScript('vars/common', 'ansible', 'ansible')
+                    //ansiblePlaybookScript = loadScript('vars/common', 'ansible', 'ansible')
                 }
             }
         }
@@ -40,7 +40,7 @@ pipeline {
        stage('deploy') {
             steps {
                script {
-                //def ansiblePlaybookScript = load 'Jenkins/shared-libraries/vars/common/ansible/ansible.groovy'
+                def ansiblePlaybookScript = load 'Jenkins/shared-libraries/vars/common/ansible/ansible.groovy'
                 values = [:]
                 currentWs = sh(returnStdout: true, script: 'pwd').trim()
                 jobName = sh(returnStdout: true, script: "echo $JOB_NAME").split('/')[-1].trim()
