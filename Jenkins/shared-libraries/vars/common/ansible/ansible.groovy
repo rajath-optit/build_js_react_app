@@ -23,8 +23,8 @@ def playbook(Map pipelineParams) {
                 inventory_path = "${pipelineParams.currentWs}/ansible"
                 sh """
                         rsync -Lkr ${pipelineParams.currentWs}/ansible/* ${pipelineParams.currentWs}/ansible/
-                        ansible-playbook -i ${inventory_path}/hosts $pipelineParams.ansiblePlaybook 
-                        //ansible-playbook -i ${inventory_path}/hosts $pipelineParams.ansiblePlaybook $pipelineParams.ansibleExtraArgs
+                        //ansible-playbook -i ${inventory_path}/hosts $pipelineParams.ansiblePlaybook 
+                        ansible-playbook -i ${inventory_path}/hosts $pipelineParams.ansiblePlaybook $pipelineParams.ansibleExtraArgs
                      """
             }
         }
