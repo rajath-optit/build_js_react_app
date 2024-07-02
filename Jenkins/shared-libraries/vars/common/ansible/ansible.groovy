@@ -3,16 +3,16 @@ def playbook(Map pipelineParams) {
             stage('ansible-run') {
                 println pipelineParams
                 dir("$pipelineParams.currentWs") {
-                    if (!params.private_repo_url || !params.private_repo_branch || !params.private_repo_credentials) {
-                        println('''\
-                               Uh Oh! Please create Jenkins pramaters named
+                    if (!env.private_repo_url || !env.private_repo_branch || !env.private_repo_credentials) {
+                        println( '''\
+                               Uh Oh! Please create Jenkins environment variables named
                                private_repo_url, private_repo_branch, private_repo_credentials
-                               '''.stripIndent().replace("\n", " ") )
+                               '''.stripIndent().replace("\n", " "))
                         error 'Please resolve errors and rerun..'
                     }
 
                     if (params.private_branch != null && params.private_branch != "") {
-                        params.private_repo_branch = params.private_branch
+                        env.private_repo_branch = params.private_branch
                         println('Info: Branch override is enabled')
                     } else
                         println('Info: Branch override is disabled')
