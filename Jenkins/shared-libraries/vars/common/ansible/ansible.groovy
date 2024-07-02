@@ -2,7 +2,7 @@ def playbook(Map pipelineParams) {
 
             stage('ansible-run') {
                 println pipelineParams
-                dir("$pipelineParams.currentWs") {
+                dir("$pipelineParams.currentWs/private") {
                     if (!env.private_repo_url || !env.private_repo_branch || !env.private_repo_credentials) {
                         println( '''\
                                Uh Oh! Please create Jenkins environment variables named
@@ -22,7 +22,7 @@ def playbook(Map pipelineParams) {
 
                 inventory_path = "${pipelineParams.currentWs}/ansible"
                 sh """
-                        rsync -Lkr ${pipelineParams.currentWs}/ansible/* ${pipelineParams.currentWs}/ansible/
+                        rsync -Lkr ${pipelineParams.currentWs}/private/ansible/* ${pipelineParams.currentWs}/ansible/
             
                         ansible-playbook -i ${inventory_path}/hosts $pipelineParams.ansiblePlaybook $pipelineParams.ansibleExtraArgs
                      """
