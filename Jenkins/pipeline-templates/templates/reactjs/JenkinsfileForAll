@@ -136,7 +136,7 @@ pipeline {
             }
         }
 
-        stage('Docker Build') {
+        stage('Container Build') {
             steps {
                 script {
                     dockerBuildScript.dockerBuild(params.DOCKER_IMAGE_NAME, params.DOCKER_IMAGE_TAG)
