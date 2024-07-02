@@ -90,7 +90,7 @@ pipeline {
             }
         }
 
-        stage('Docker Build') {
+        stage('Container Build') {
             steps {
                 script {
                     dockerBuildScript.dockerBuild(params.DOCKER_IMAGE_NAME, params.DOCKER_IMAGE_TAG)
@@ -98,7 +98,10 @@ pipeline {
             }
         }
         
-        stage('Docker Publish') {
+        stage('Container Publish to DockerHub') {
+            when {
+                expression { params.REGISTRY == 'DockerHub' }
+            }
             steps {
                 script {
                     dockerPublishScript.publishToContainer(params.DOCKER_IMAGE_NAME, params.DOCKER_REPO, params.DOCKER_IMAGE_TAG, params.DOCKER_CREDENTIAL)
