@@ -25,7 +25,7 @@ pipeline {
 
                     // Load scripts from 'vars' directory
                     gitCheckoutScript = loadScript('vars/common/scm-util', 'git', 'GitCheckout')
-                    //ansiblePlaybookScript = loadScript('vars/common', 'ansible', 'ansible')
+                    ansiblePlaybookScript = loadScript('vars/common', 'ansible', 'ansible')
                 }
             }
         }
@@ -40,11 +40,11 @@ pipeline {
        stage('deploy') {
             steps {
                script {
-                def ansiblePlaybookScript = load 'Jenkins/shared-libraries/vars/common/ansible/ansible.groovy'
+                //def ansiblePlaybookScript = load 'Jenkins/shared-libraries/vars/common/ansible/ansible.groovy'
                 values = [:]
                 currentWs = sh(returnStdout: true, script: 'pwd').trim()
                 jobName = sh(returnStdout: true, script: "echo $JOB_NAME").split('/')[-1].trim()
-                ansiblePlaybook = "ansible/test.yml"
+                ansiblePlaybook = "${currentWs}/ansible/test.yml"
                 ansibleExtraArgs = "--vault-password-file /var/lib/jenkins/secrets/vault-pass -v"
                 values.put('currentWs', currentWs)
                 values.put('jobName', jobName)
@@ -52,7 +52,6 @@ pipeline {
                 values.put('ansibleExtraArgs', ansibleExtraArgs)
                 println values
                 ansiblePlaybookScript.playbook(values)
-                //common.ansible.ansible(values)
                 currentBuild.result = 'SUCCESS'
                 currentBuild.description = "Private: ${params.private_branch}"
             }
