@@ -44,7 +44,7 @@ pipeline {
                 values = [:]
                 currentWs = sh(returnStdout: true, script: 'pwd').trim()
                 jobName = sh(returnStdout: true, script: "echo $JOB_NAME").split('/')[-1].trim()
-                ansiblePlaybook = "${currentWs}/ansible/test.yml"
+                ansiblePlaybook = "ansible/test.yml"
                 ansibleExtraArgs = "--vault-password-file /var/lib/jenkins/secrets/vault-pass -v"
                 values.put('currentWs', currentWs)
                 values.put('jobName', jobName)
