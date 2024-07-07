@@ -47,7 +47,7 @@ pipeline {
                     sonarscript = load './cicd-repo/Jenkins/shared-libraries/vars/common/code-analysis/sonarqube-util/sonarCloudAnalysis.groovy'
                     dockerBuildScript = load './cicd-repo/Jenkins/shared-libraries/vars/common/docker-util/DockerBuild.groovy'
                     dockerPublishscript = load './cicd-repo/Jenkins/shared-libraries/vars/common/docker-util/DockerPublish.groovy'
-                    dockerScanScript = load './cicd-repo/Jenkins/shared-libraries/vars/common/docker-util/DockerScan.groovy'
+                    dockerScanScript = load './cicd-repo/Jenkins/shared-libraries/vars/common/dockerScan.groovy'
                 }
             }
         }
