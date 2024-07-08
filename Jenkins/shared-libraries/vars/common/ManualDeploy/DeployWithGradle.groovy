@@ -1,4 +1,4 @@
-def deployWithMaven() {
+def deployWithGradle() {
     sh "gradle clean build"
 }
 
@@ -16,7 +16,7 @@ def copyWarToRemote(credentialID, remoteHost) {
     }
 }
 
-def deployWithJar(credentialID, remoteHost) {
+def deployJar(credentialID, remoteHost) {
   
    withCredentials([sshUserPrivateKey(credentialsId: "${credentialID}", keyFileVariable: 'SSH_PRIVATE_KEY', usernameVariable: 'SSH_USERNAME')]) {
                         sh "ssh -i $SSH_PRIVATE_KEY $SSH_USERNAME@${remoteHost} 'java -jar /root/*.jar'"
