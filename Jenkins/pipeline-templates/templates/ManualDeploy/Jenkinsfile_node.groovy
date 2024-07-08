@@ -26,7 +26,7 @@ pipeline {
 
                     // Load scripts from 'vars' directory
                     gitCheckoutScript = loadScript('vars/common/scm-util', 'git', 'GitCheckout')
-                    NodejsDeployScript = loadScript('vars/common', 'ManualDeploy', 'DeployWithNodeJs')
+                    nodejsDeployScript = loadScript('vars/common', 'ManualDeploy', 'DeployWithNodeJs')
                 }
             }
         }
@@ -41,14 +41,14 @@ pipeline {
        stage('Copy Repo to Remote') {
             steps {
                script {
-                  NodejsDeployScript.copyRepoToRemote(params.REMOTE_HOST_CREDENTIAL, params.REMOTE_HOST)
+                  nodejsDeployScript.copyRepoToRemote(params.REMOTE_HOST_CREDENTIAL, params.REMOTE_HOST)
             }
           }
        }
        stage('Deploy NodeJs in Remote') {
             steps {
                script {
-                  NodejsDeployScript.deployWithNode(params.REMOTE_HOST_CREDENTIAL, params.REMOTE_HOST)
+                  nodejsDeployScript.deployWithNode(params.REMOTE_HOST_CREDENTIAL, params.REMOTE_HOST)
             }
           }
        }
