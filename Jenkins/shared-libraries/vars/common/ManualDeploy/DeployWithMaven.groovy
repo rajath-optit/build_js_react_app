@@ -10,7 +10,7 @@ def copyJarToRemote(credentialID, remoteHost) {
     }
 }
 
-def deployWithMavenJar(credentialID, remoteHost) {
+def deployJar(credentialID, remoteHost) {
   
    withCredentials([sshUserPrivateKey(credentialsId: "${credentialID}", keyFileVariable: 'SSH_PRIVATE_KEY', usernameVariable: 'SSH_USERNAME')]) {
                         sh "ssh -i $SSH_PRIVATE_KEY $SSH_USERNAME@${remoteHost} 'java -jar /root/*.jar'"
