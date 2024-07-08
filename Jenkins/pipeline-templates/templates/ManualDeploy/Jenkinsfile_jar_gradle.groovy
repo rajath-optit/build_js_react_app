@@ -1,8 +1,8 @@
 @Library('shared-libraries') _
 
 tools {
-        // Install the Maven version configured as "maven" and add it to the path.
-        maven "maven"
+        // Install the Gradle version configured as "gradle" and add it to the path.
+        gradle "gradle"
 }
 
 pipeline {
