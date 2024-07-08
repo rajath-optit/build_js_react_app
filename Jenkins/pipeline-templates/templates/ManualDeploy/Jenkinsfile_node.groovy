@@ -4,7 +4,7 @@ pipeline {
     agent any
 
     parameters {
-        string(name: 'GIT_URL', description: 'Git repository URL contains playbook')
+        string(name: 'GIT_URL', description: 'Git repository URL contains source code')
         string(name: 'GIT_BRANCH_NAME', description: 'Git Branch name')
         credentials(name: 'GIT_CREDENTIAL', description: 'Jenkins credential for Git repo', required: true)
         string(name: 'REMOTE_HOST', description: 'Remote host IP')
