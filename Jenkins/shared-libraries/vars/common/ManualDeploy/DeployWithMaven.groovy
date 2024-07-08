@@ -1,5 +1,5 @@
 def deployWithMaven() {
-
+    sh "mvn clean install"
     sh "mvn clean package"
 }
 
