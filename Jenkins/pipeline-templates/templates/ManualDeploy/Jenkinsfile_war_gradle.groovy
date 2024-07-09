@@ -1,13 +1,12 @@
 @Library('shared-libraries') _
 
+pipeline {
+    agent any
+
 tools {
         // Install the Gradle version configured as "gradle" and add it to the path.
         gradle "gradle"
 }
-
-pipeline {
-    agent any
-
     parameters {
         string(name: 'GIT_URL', description: 'Git repository URL contains Source Code')
         string(name: 'GIT_BRANCH_NAME', description: 'Git Branch name')
