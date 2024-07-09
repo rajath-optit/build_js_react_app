@@ -92,7 +92,15 @@ pipeline {
                 }
             }
         }
-        
+
+         stage('Docker Scan') {
+            steps {
+                script {
+                    dockerScanScript.dockerScan(params.DOCKER_IMAGE_NAME)
+                }
+            }
+        }
+
         stage('Docker Publish') {
             steps {
                 script {
