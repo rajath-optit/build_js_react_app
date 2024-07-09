@@ -37,10 +37,11 @@ pipeline {
                     sonarScript = loadScript('vars/common', 'codeAnalysis', 'PerformSonarAnalysisForReactjs')
                     dockerBuildScript = loadScript('vars/common', 'dockerUtil', 'DockerUtil')
                     dockerPublishScript = loadScript('vars/common', 'containerPublish', 'DockerHubPublish')
-
+                    dockerScanScript = loadScript('vars/common', 'containerPublish', 'dockerScan')
                     // Load scripts from 'src' directory
                     buildWithNpmScript = loadScript('src/org/common', 'build', 'BuildWithNpm')
                     unitTestWithNpmScript = loadScript('src/org/common', 'unitTest', 'UnitTestWithNpm')
+                
                 }
             }
         }
