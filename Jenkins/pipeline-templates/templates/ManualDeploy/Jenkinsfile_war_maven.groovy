@@ -1,12 +1,12 @@
 @Library('shared-libraries') _
 
+pipeline {
+    agent any
+
 tools {
         // Install the Maven version configured as "maven" and add it to the path.
         maven "maven"
 }
-
-pipeline {
-    agent any
 
     parameters {
         string(name: 'GIT_URL', description: 'Git repository URL contains Source Code')
