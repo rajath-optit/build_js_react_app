@@ -42,12 +42,12 @@ pipeline {
         stage('Load DSL') {
             steps {
                 script {
-                    gitCheckoutScript = load './cicd-repo/Jenkins/shared-libraries/vars/common/scm-util/git/GitCheckout.groovy'
-                    buildWithGradleScript = load './cicd-repo/Jenkins/shared-libraries/src/org/common/build/Reactjs/BuildWithReactjs.groovy'
-                    sonarscript = load './cicd-repo/Jenkins/shared-libraries/vars/common/code-analysis/sonarqube-util/sonarCloudAnalysis.groovy'
-                    dockerBuildScript = load './cicd-repo/Jenkins/shared-libraries/vars/common/docker-util/DockerBuild.groovy'
-                    dockerPublishscript = load './cicd-repo/Jenkins/shared-libraries/vars/common/docker-util/DockerPublish.groovy'
-                    dockerScanScript = load './cicd-repo/Jenkins/shared-libraries/vars/common/dockerScan.groovy'
+                    gitCheckoutScript = load '/Jenkins/shared-libraries/vars/common/scm-util/git/GitCheckout.groovy'
+                    buildWithGradleScript = load '/Jenkins/shared-libraries/src/org/common/build/Reactjs/BuildWithReactjs.groovy'
+                    sonarscript = load 'Jenkins/shared-libraries/vars/common/code-analysis/sonarqube-util/sonarCloudAnalysis.groovy'
+                    dockerBuildScript = load '/Jenkins/shared-libraries/vars/common/docker-util/DockerBuild.groovy'
+                    dockerPublishscript = load '/Jenkins/shared-libraries/vars/common/docker-util/DockerPublish.groovy'
+                    dockerScanScript = load '/Jenkins/shared-libraries/vars/common/dockerScan.groovy'
                 }
             }
         }
