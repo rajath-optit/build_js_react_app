@@ -1,5 +1,5 @@
 def copyRepoToRemote(credentialID, remoteHost) {
-     withCredentials([sshUserPrivateKey(credentialsId: '${credentialID}', keyFileVariable: 'SSH_PRIVATE_KEY', usernameVariable: 'SSH_USERNAME')]) {
+     withCredentials([sshUserPrivateKey(credentialsId: "${credentialID}", keyFileVariable: 'SSH_PRIVATE_KEY', usernameVariable: 'SSH_USERNAME')]) {
                         sh "scp -r -i $SSH_PRIVATE_KEY ${env.workspace}/* $SSH_USERNAME@${remoteHost}:/tmp/"
      }
 }
