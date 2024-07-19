@@ -14,6 +14,7 @@ tools {
         credentials(name: 'GIT_CREDENTIAL', description: 'Jenkins credential for Git repo', required: true)
         string(name: 'REMOTE_HOST', description: 'Remote host IP')
         credentials(name: 'REMOTE_HOST_CREDENTIAL', description: 'Jenkins credential for connecting remote host', required: true)
+        string(name: 'ARTIFACT_PATH', defaultValue: 'webapp/target/*.war', description: 'Artifact path where the artifact is being generated.')
     }
 
     stages {
@@ -55,7 +56,7 @@ tools {
        stage('Deploy Maven war in Tomcat') {
             steps {
                script {
-                  mavenDeployScript.deployWarToTomcat(params.REMOTE_HOST_CREDENTIAL, params.REMOTE_HOST)
+                  mavenDeployScript.deployWarToTomcat(params.REMOTE_HOST_CREDENTIAL, params.REMOTE_HOST, params.ARTIFACT_PATH)
             }
           }
        }
