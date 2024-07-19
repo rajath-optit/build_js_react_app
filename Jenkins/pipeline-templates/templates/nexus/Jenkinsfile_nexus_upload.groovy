@@ -15,7 +15,7 @@ tools {
         string(name: 'ARTIFACT_ID', description: 'Artifact Id')
         string(name: 'ARTIFACT_PATH', description: 'Artifact Path where it generates', defaultValue: 'target/application.war')
         choice(name: 'ARTIFACT_TYPE', choices: ['war', 'jar'], description: 'Artifact Type')
-        string(name: 'NEXUS_URL', description: 'Nexus URL IP:Port', defaultValue: '172.x.x.1:8081')
+        string(name: 'NEXUS_URL', description: 'Nexus URL IP:Port Ex:172.x.x.1:8081')
         credentials(name: 'NEXUS_CREDENTIAL_ID', description: 'Jenkins credential for connecting nexus UI', required: true)
         string(name: 'NEXUS_REPOSITORY', description: 'Nexus Repository where we need to store the artifacts in nexus UI')
         string(name: 'NEXUS_GROUP_ID', description: 'Nexus folder structure inside the repository')
