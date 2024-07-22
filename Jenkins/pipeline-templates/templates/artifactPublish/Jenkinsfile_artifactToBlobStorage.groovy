@@ -5,6 +5,7 @@ pipeline {
 
 tools {
         // Install the Maven version configured as "maven" and add it to the path.
+        // Install azure cli and run the command "az login"
         maven "maven"
 }
 
