@@ -14,7 +14,6 @@ tools {
         credentials(name: 'GIT_CREDENTIAL', description: 'Jenkins credential for Git repo', required: true)
         string(name: 'BUCKET_NAME', description: 'Bucket or Container name')
         string(name: 'ARTIFACT_FOLDER', description: 'The folder structure inside the bucket Ex: artifact', defaultValue: 'artifact')
-        choice(name: 'ARTIFACT_TYPE', choices: ['war', 'jar'], description: 'Artifact Type')
         string(name: 'ARTIFACT_PATH', defaultValue: 'target/*.jar', description: 'Artifact path where the artifact is being generated.')
     }
 
