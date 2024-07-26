@@ -13,7 +13,8 @@ tools {
         credentials(name: 'GIT_CREDENTIAL', description: 'Jenkins credential for Git repo', required: true)
         string(name: 'REMOTE_HOST', description: 'Remote host IP')
         credentials(name: 'REMOTE_HOST_CREDENTIAL', description: 'Jenkins credential for connecting remote host', required: true)
-        string(name: 'ARTIFACT_PATH', defaultValue: 'build/libs/*.war', description: 'Artifact path where the artifact is being generated.')
+        string(name: 'ARTIFACT_PATH', defaultValue: 'build/libs/*.jar', description: 'Artifact path where the artifact is being generated.')
+        string(name: 'REMOTE_PATH', defaultValue: '/opt/tomcat/webapps', description: 'The path where artifact to be copy.')
     }
 
     stages {
@@ -55,7 +56,7 @@ tools {
        stage('Deploy Artifact in Tomcat') {
             steps {
                script {
-                  gradleDeployScript.deployWarToTomcat(params.REMOTE_HOST_CREDENTIAL, params.REMOTE_HOST)
+                  gradleDeployScript.deployWarToTomcat(params.REMOTE_HOST_CREDENTIAL, params.REMOTE_HOST, params.ARTIFACT_PATH, params.REMOTE_PATH)
             }
           }
        }
