@@ -9,6 +9,7 @@ pipeline {
         credentials(name: 'GIT_CREDENTIAL', description: 'Jenkins credential for Git repo', required: true)
         string(name: 'REMOTE_HOST', description: 'Remote host IP')
         credentials(name: 'REMOTE_HOST_CREDENTIAL', description: 'Jenkins credential for connecting remote host', required: true)
+        string(name: 'REMOTE_PATH', defaultValue: '/tmp/', description: 'The path where source to be copy.')
         }
 
     stages {
@@ -41,14 +42,14 @@ pipeline {
        stage('Copy Repo to Remote') {
             steps {
                script {
-                  nodejsDeployScript.copyRepoToRemote(params.REMOTE_HOST_CREDENTIAL, params.REMOTE_HOST)
+                  nodejsDeployScript.copyRepoToRemote(params.REMOTE_HOST_CREDENTIAL, params.REMOTE_HOST, params.REMOTE_PATH)
             }
           }
        }
        stage('Deploy NodeJs in Remote') {
             steps {
                script {
-                  nodejsDeployScript.deployWithNode(params.REMOTE_HOST_CREDENTIAL, params.REMOTE_HOST)
+                  nodejsDeployScript.deployWithNode(params.REMOTE_HOST_CREDENTIAL, params.REMOTE_HOST, params.REMOTE_PATH)
             }
           }
        }
