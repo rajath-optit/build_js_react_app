@@ -13,6 +13,7 @@ tools {
         credentials(name: 'GIT_CREDENTIAL', description: 'Jenkins credential for Git repo', required: true)
         string(name: 'REMOTE_HOST', description: 'Remote host IP')
         credentials(name: 'REMOTE_HOST_CREDENTIAL', description: 'Jenkins credential for connecting remote host', required: true)
+        string(name: 'ARTIFACT_PATH', defaultValue: 'build/libs/*.war', description: 'Artifact path where the artifact is being generated.')
     }
 
     stages {
