@@ -17,7 +17,6 @@ tools {
         string(name: 'ARTIFACT_PATH', defaultValue: 'webapp/target/*.war', description: 'Artifact path where the artifact is being generated.')
         string(name: 'REMOTE_PATH', defaultValue: '/opt/tomcat/webapps/', description: 'The path where artifact to be copy.')
     }
-    }
 
     stages {
         stage('Load Scripts') {
