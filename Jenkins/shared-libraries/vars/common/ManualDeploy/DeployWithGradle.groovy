@@ -2,31 +2,31 @@ def deployWithGradle() {
     sh "gradle clean build"
 }
 
-def copyJarToRemote(credentialID, remoteHost) {
+def copyJarToRemote(credentialID, remoteHost, artifactPath, remotePath) {
   
     withCredentials([sshUserPrivateKey(credentialsId: "${credentialID}", keyFileVariable: 'SSH_PRIVATE_KEY', usernameVariable: 'SSH_USERNAME')]) {
-                        sh "scp -i $SSH_PRIVATE_KEY build/libs/*.jar $SSH_USERNAME@${remoteHost}:/root/"
+                        sh "scp -i $SSH_PRIVATE_KEY ${artifactPath} $SSH_USERNAME@${remoteHost}:${remotePath}"
     }
 }
 
-def copyWarToRemote(credentialID, remoteHost) {
+def copyWarToRemote(credentialID, remoteHost, artifactPath, remotePath) {
   
     withCredentials([sshUserPrivateKey(credentialsId: "${credentialID}", keyFileVariable: 'SSH_PRIVATE_KEY', usernameVariable: 'SSH_USERNAME')]) {
-                        sh "scp -i $SSH_PRIVATE_KEY build/libs/*.war $SSH_USERNAME@${remoteHost}:/root/"
+                        sh "scp -i $SSH_PRIVATE_KEY ${artifactPath} $SSH_USERNAME@${remoteHost}:${remotePath}"
     }
 }
 
-def deployJar(credentialID, remoteHost) {
+def deployJar(credentialID, remoteHost, remotePath) {
   
    withCredentials([sshUserPrivateKey(credentialsId: "${credentialID}", keyFileVariable: 'SSH_PRIVATE_KEY', usernameVariable: 'SSH_USERNAME')]) {
-                        sh "ssh -i $SSH_PRIVATE_KEY $SSH_USERNAME@${remoteHost} 'java -jar /root/*.jar'"
+                        sh "ssh -i $SSH_PRIVATE_KEY $SSH_USERNAME@${remoteHost} 'java -jar ${remotePath}/*.jar'"
     }
 }
 
-def deployWarToTomcat(credentialID, remoteHost) {
+def deployWarToTomcat(credentialID, remoteHost, artifactPath, remotePath) {
   
     withCredentials([sshUserPrivateKey(credentialsId: "${credentialID}", keyFileVariable: 'SSH_PRIVATE_KEY', usernameVariable: 'SSH_USERNAME')]) {
-                        sh "scp -i $SSH_PRIVATE_KEY build/libs/*.war $SSH_USERNAME@${remoteHost}:/opt/tomcat/webapps/"
+                        sh "scp -i $SSH_PRIVATE_KEY ${artifactPath} $SSH_USERNAME@${remoteHost}:${remotePath}"
                         sh "ssh -i $SSH_PRIVATE_KEY $SSH_USERNAME@${remoteHost} 'sudo systemctl restart tomcat'"
     }
 }
