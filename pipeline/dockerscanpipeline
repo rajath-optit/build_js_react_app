@@ -27,17 +27,7 @@ pipeline {
     }
 
     stages {
-        stage('Git Checkout CICD Repo') {
-            steps {
-                script {
-                    dir('cicd-repo') {
-                        git branch: params.DSL_BRANCH_NAME,
-                            credentialsId: params.GIT_DSL_CREDENTIAL,
-                            url: params.DSL_GIT_URL
-                    }
-                }
-            }
-        }
+       
         
         stage('Load DSL') {
             steps {
@@ -47,7 +37,7 @@ pipeline {
                     sonarscript = load 'Jenkins/shared-libraries/vars/common/code-analysis/sonarqube-util/sonarCloudAnalysis.groovy'
                     dockerBuildScript = load '/Jenkins/shared-libraries/vars/common/docker-util/DockerBuild.groovy'
                     dockerPublishscript = load '/Jenkins/shared-libraries/vars/common/docker-util/DockerPublish.groovy'
-                    dockerScanScript = load '/Jenkins/shared-libraries/vars/common/dockerScan.groovy'
+                    dockerScanScript = load '/Jenkins/shared-libraries/vars/common/docker-util/dockerScan.groovy'
                 }
             }
         }
