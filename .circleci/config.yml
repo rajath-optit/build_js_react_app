@@ -4,6 +4,10 @@ executors:
   java-executor:
     docker:
       - image: circleci/openjdk:11-jdk
+    environment:
+      JAVA_HOME: /usr/local/openjdk-11
+      GROOVY_HOME: /usr/local/groovy
+      PATH: /usr/local/groovy/bin:/usr/local/openjdk-11/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
     working_directory: ~/project
 
 jobs:
@@ -17,7 +21,8 @@ jobs:
             wget https://archive.apache.org/dist/groovy/4.0.11/distribution/apache-groovy-sdk-4.0.11.zip
             unzip apache-groovy-sdk-4.0.11.zip
             sudo mv groovy-4.0.11 /usr/local/groovy
-            export PATH=$PATH:/usr/local/groovy/bin
+            echo 'export PATH=$PATH:/usr/local/groovy/bin' >> ~/.bashrc
+            source ~/.bashrc
             groovy --version
 
   load_scripts:
