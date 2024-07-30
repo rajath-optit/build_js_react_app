@@ -118,3 +118,62 @@ jobs:
 
   docker_scan:
     docker:
+      - image: circleci/openjdk:11-jdk
+    steps:
+      - setup_remote_docker:
+          version: 20.10.7
+      - run:
+          name: Docker Scan
+          command: |
+            export PATH=$PATH:/usr/local/groovy/bin
+            groovy -e "${dockerScanScript}.dockerScan('${DOCKER_IMAGE_NAME}')"
+
+  docker_publish:
+    docker:
+      - image: circleci/openjdk:11-jdk
+    steps:
+      - setup_remote_docker:
+          version: 20.10.7
+      - run:
+          name: Docker Publish
+          command: |
+            export PATH=$PATH:/usr/local/groovy/bin
+            echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+            groovy -e "${dockerPublishScript}.publishToContainer('${DOCKER_IMAGE_NAME}', '${DOCKER_REPO}', '${DOCKER_IMAGE_TAG}', '${DOCKER_CREDENTIAL}')"
+
+workflows:
+  version: 2
+  build_and_deploy:
+    jobs:
+      - install_groovy
+      - load_scripts:
+          baseDir: "Jenkins/shared-libraries"
+          requires:
+            - install_groovy
+      - git_checkout:
+          sourceCodeUrl: "https://github.com/example/repo.git"
+          sourceCodeBranchName: "main"
+          gitSourceCodeCredential: "git-credential-id"
+          requires:
+            - load_scripts
+      - install_dependencies:
+          requires:
+            - git_checkout
+      - build:
+          requires:
+            - install_dependencies
+      - test:
+          requires:
+            - build
+      - sonar_analysis:
+          requires:
+            - test
+      - docker_build:
+          requires:
+            - sonar_analysis
+      - docker_scan:
+          requires:
+            - docker_build
+      - docker_publish:
+          requires:
+            - docker_scan
