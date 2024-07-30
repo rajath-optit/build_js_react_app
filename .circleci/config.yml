@@ -21,8 +21,7 @@ jobs:
             wget https://archive.apache.org/dist/groovy/4.0.11/distribution/apache-groovy-sdk-4.0.11.zip
             unzip apache-groovy-sdk-4.0.11.zip
             sudo mv groovy-4.0.11 /usr/local/groovy
-            echo 'export PATH=$PATH:/usr/local/groovy/bin' >> ~/.bashrc
-            source ~/.bashrc
+            export PATH=$PATH:/usr/local/groovy/bin
             groovy --version
 
   load_scripts:
@@ -36,6 +35,7 @@ jobs:
       - run:
           name: Load Scripts
           command: |
+            export PATH=$PATH:/usr/local/groovy/bin
             baseDir="${CIRCLE_WORKING_DIRECTORY}/${BASE_DIR}"
             loadScript() {
               type=$1
@@ -100,7 +100,9 @@ jobs:
       - checkout
       - run:
           name: SonarQube Analysis
-          command: groovy -e "${sonarScript}.performSonarCloudAnalysis('${SONAR_PROJECT_KEY}', '${SONAR_ORGANIZATION}', '${SONAR_SOURCES_DIR}', '${SONAR_TOKEN}')"
+          command: |
+            export PATH=$PATH:/usr/local/groovy/bin
+            groovy -e "${sonarScript}.performSonarCloudAnalysis('${SONAR_PROJECT_KEY}', '${SONAR_ORGANIZATION}', '${SONAR_SOURCES_DIR}', '${SONAR_TOKEN}')"
 
   docker_build:
     docker:
@@ -110,63 +112,9 @@ jobs:
           version: 20.10.7
       - run:
           name: Docker Build
-          command: groovy -e "${dockerBuildScript}.dockerBuild('${DOCKER_IMAGE_NAME}', '${DOCKER_IMAGE_TAG}')"
+          command: |
+            export PATH=$PATH:/usr/local/groovy/bin
+            groovy -e "${dockerBuildScript}.dockerBuild('${DOCKER_IMAGE_NAME}', '${DOCKER_IMAGE_TAG}')"
 
   docker_scan:
     docker:
-      - image: circleci/openjdk:11-jdk
-    steps:
-      - setup_remote_docker:
-          version: 20.10.7
-      - run:
-          name: Docker Scan
-          command: groovy -e "${dockerScanScript}.dockerScan('${DOCKER_IMAGE_NAME}')"
-
-  docker_publish:
-    docker:
-      - image: circleci/openjdk:11-jdk
-    steps:
-      - setup_remote_docker:
-          version: 20.10.7
-      - run:
-          name: Docker Publish
-          command: |
-            echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
-            groovy -e "${dockerPublishScript}.publishToContainer('${DOCKER_IMAGE_NAME}', '${DOCKER_REPO}', '${DOCKER_IMAGE_TAG}', '${DOCKER_CREDENTIAL}')"
-
-workflows:
-  version: 2
-  build_and_deploy:
-    jobs:
-      - install_groovy
-      - load_scripts:
-          baseDir: "Jenkins/shared-libraries"
-          requires:
-            - install_groovy
-      - git_checkout:
-          sourceCodeUrl: "https://github.com/example/repo.git"
-          sourceCodeBranchName: "main"
-          gitSourceCodeCredential: "git-credential-id"
-          requires:
-            - load_scripts
-      - install_dependencies:
-          requires:
-            - git_checkout
-      - build:
-          requires:
-            - install_dependencies
-      - test:
-          requires:
-            - build
-      - sonar_analysis:
-          requires:
-            - test
-      - docker_build:
-          requires:
-            - sonar_analysis
-      - docker_scan:
-          requires:
-            - docker_build
-      - docker_publish:
-          requires:
-            - docker_scan
