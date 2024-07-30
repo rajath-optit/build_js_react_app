@@ -22,7 +22,7 @@ jobs:
             unzip apache-groovy-sdk-4.0.11.zip
             sudo mv groovy-4.0.11 /usr/local/groovy
             export PATH=$PATH:/usr/local/groovy/bin
-            groovy --version
+            groovy --version  # Check if Groovy is installed correctly
 
   load_scripts:
     parameters:
@@ -35,14 +35,15 @@ jobs:
       - run:
           name: Load Scripts
           command: |
-            export PATH=$PATH:/usr/local/groovy/bin
+            export PATH=$PATH:/usr/local/groovy/bin  # Ensure PATH includes Groovy bin directory
             baseDir="${CIRCLE_WORKING_DIRECTORY}/${BASE_DIR}"
             loadScript() {
               type=$1
               technology=$2
               scriptName=$3
               scriptPath="${baseDir}/${type}/${technology}/${scriptName}.groovy"
-              groovy "${scriptPath}"
+              echo "Loading script: ${scriptPath}"  # Debugging line
+              groovy "${scriptPath}"  # Run the Groovy script
             }
             gitCheckoutScript=$(loadScript "vars/common/scm-util" "git" "GitCheckout")
             sonarScript=$(loadScript "vars/common" "codeAnalysis" "PerformSonarAnalysisForReactjs")
