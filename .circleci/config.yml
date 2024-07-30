@@ -62,7 +62,10 @@ jobs:
     steps:
       - run:
           name: Git Checkout Source Code Repo
-          command: groovy -e "${gitCheckoutScript}.gitCheckout('${SOURCE_CODE_BRANCH_NAME}', '${SOURCE_CODE_URL}', '${GIT_SOURCE_CODE_CREDENTIAL}')"
+          command: |
+            git config --global credential.helper store
+            echo "https://${GIT_USER}:${GIT_TOKEN}@${SOURCE_CODE_URL}" > ~/.git-credentials
+            git clone -b "${SOURCE_CODE_BRANCH_NAME}" "${SOURCE_CODE_URL}"
 
   install_dependencies:
     executor: node-executor
