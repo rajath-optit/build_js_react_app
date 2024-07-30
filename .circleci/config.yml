@@ -1,0 +1,123 @@
+version: 2.1
+
+executors:
+  groovy-executor:
+    docker:
+      - image: my-custom-groovy-image
+    working_directory: ~/project
+
+jobs:
+  load_scripts:
+    executor: groovy-executor
+    steps:
+      - checkout
+      - run:
+          name: Load Scripts
+          command: |
+            # Define baseDir for Groovy scripts
+            baseDir="${CIRCLE_WORKING_DIRECTORY}/Jenkins/shared-libraries"
+
+            # Function to load Groovy scripts
+            loadScript() {
+              type=$1
+              technology=$2
+              scriptName=$3
+              scriptPath="${baseDir}/${type}/${technology}/${scriptName}.groovy"
+              groovy "${scriptPath}"
+            }
+
+            # Load Groovy scripts
+            gitCheckoutScript=$(loadScript "vars/common/scm-util" "git" "GitCheckout")
+            sonarScript=$(loadScript "vars/common" "codeAnalysis" "PerformSonarAnalysisForReactjs")
+            dockerBuildScript=$(loadScript "vars/common" "dockerUtil" "DockerUtil")
+            dockerPublishScript=$(loadScript "vars/common" "containerPublish" "DockerHubPublish")
+            dockerScanScript=$(loadScript "vars/common" "dockerUtil" "DockerScan")
+            buildWithNpmScript=$(loadScript "src/org/common" "build" "BuildWithNpm")
+            unitTestWithNpmScript=$(loadScript "src/org/common" "unitTest" "UnitTestWithNpm")
+
+  git_checkout:
+    executor: groovy-executor
+    steps:
+      - run:
+          name: Git Checkout Source Code Repo
+          command: groovy -e "${gitCheckoutScript}.gitCheckout('${SOURCE_CODE_BRANCH_NAME}', '${GIT_SOURCE_CODE_URL}', '${GIT_SOURCE_CODE_CREDENTIAL}')"
+
+  build:
+    executor: groovy-executor
+    steps:
+      - run:
+          name: Build
+          command: groovy -e "${buildWithNpmScript}.build()"
+
+  test:
+    executor: groovy-executor
+    steps:
+      - run:
+          name: Unit Test
+          command: groovy -e "${unitTestWithNpmScript}.unitTest()"
+
+  sonar_analysis:
+    executor: groovy-executor
+    steps:
+      - run:
+          name: SonarQube Analysis
+          command: groovy -e "${sonarScript}.performSonarCloudAnalysis('${SONAR_PROJECT_KEY}', '${SONAR_ORGANIZATION}', '${SONAR_SOURCES_DIR}', '${SONAR_TOKEN}')"
+
+  docker_build:
+    docker:
+      - image: my-custom-groovy-image
+    steps:
+      - setup_remote_docker:
+          version: 20.10.7
+      - run:
+          name: Docker Build
+          command: groovy -e "${dockerBuildScript}.dockerBuild('${DOCKER_IMAGE_NAME}', '${DOCKER_IMAGE_TAG}')"
+
+  docker_scan:
+    docker:
+      - image: my-custom-groovy-image
+    steps:
+      - setup_remote_docker:
+          version: 20.10.7
+      - run:
+          name: Docker Scan
+          command: groovy -e "${dockerScanScript}.dockerScan('${DOCKER_IMAGE_NAME}')"
+
+  docker_publish:
+    docker:
+      - image: my-custom-groovy-image
+    steps:
+      - setup_remote_docker:
+          version: 20.10.7
+      - run:
+          name: Docker Publish
+          command: |
+            echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+            groovy -e "${dockerPublishScript}.publishToContainer('${DOCKER_IMAGE_NAME}', '${DOCKER_REPO}', '${DOCKER_IMAGE_TAG}', '${DOCKER_CREDENTIAL}')"
+
+workflows:
+  version: 2
+  build_and_deploy:
+    jobs:
+      - load_scripts
+      - git_checkout:
+          requires:
+            - load_scripts
+      - build:
+          requires:
+            - git_checkout
+      - test:
+          requires:
+            - build
+      - sonar_analysis:
+          requires:
+            - test
+      - docker_build:
+          requires:
+            - sonar_analysis
+      - docker_scan:
+          requires:
+            - docker_build
+      - docker_publish:
+          requires:
+            - docker_scan
