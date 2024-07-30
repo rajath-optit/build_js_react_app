@@ -7,17 +7,30 @@ executors:
     working_directory: ~/project
 
 jobs:
-  install_groovy:
+  install_java_groovy:
     executor: node-executor
     steps:
       - checkout
       - run:
-          name: Install Groovy
+          name: Install Java and Groovy
           command: |
+            # Install Java
+            sudo apt-get update
+            sudo apt-get install -y openjdk-11-jdk
+            export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
+            export PATH=$JAVA_HOME/bin:$PATH
+            
+            # Verify Java installation
+            java -version
+            javac -version
+            
+            # Install Groovy
             wget https://archive.apache.org/dist/groovy/4.0.11/distribution/apache-groovy-sdk-4.0.11.zip
             unzip apache-groovy-sdk-4.0.11.zip
             sudo mv groovy-4.0.11 /usr/local/groovy
             export PATH=$PATH:/usr/local/groovy/bin
+            
+            # Verify Groovy installation
             groovy --version
 
   load_scripts:
@@ -131,11 +144,11 @@ workflows:
   version: 2
   build_and_deploy:
     jobs:
-      - install_groovy
+      - install_java_groovy
       - load_scripts:
           baseDir: "Jenkins/shared-libraries"
           requires:
-            - install_groovy
+            - install_java_groovy
       - git_checkout:
           sourceCodeUrl: "https://github.com/example/repo.git"
           sourceCodeBranchName: "main"
