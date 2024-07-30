@@ -1,22 +1,37 @@
 version: 2.1
 
 executors:
-  groovy-executor:
+  node-executor:
     docker:
-      - image: my-custom-groovy-image
+      - image: circleci/node:14  # Replace with the Node.js version you need
     working_directory: ~/project
 
 jobs:
+  install_groovy:
+    executor: node-executor
+    steps:
+      - checkout
+      - run:
+          name: Install Groovy
+          command: |
+            wget https://downloads.apache.org/groovy/enterprise/groovy-4.0.11/bin/groovy-4.0.11.zip
+            unzip groovy-4.0.11.zip
+            sudo mv groovy-4.0.11 /usr/local/groovy
+            export PATH=$PATH:/usr/local/groovy/bin
+            groovy --version
+
   load_scripts:
-    executor: groovy-executor
+    parameters:
+      baseDir:
+        type: string
+        default: "Jenkins/shared-libraries"
+    executor: node-executor
     steps:
       - checkout
       - run:
           name: Load Scripts
           command: |
-            # Define baseDir for Groovy scripts
-            baseDir="${CIRCLE_WORKING_DIRECTORY}/Jenkins/shared-libraries"
-
+            baseDir="${CIRCLE_WORKING_DIRECTORY}/${BASE_DIR}"
             # Function to load Groovy scripts
             loadScript() {
               type=$1
@@ -36,28 +51,42 @@ jobs:
             unitTestWithNpmScript=$(loadScript "src/org/common" "unitTest" "UnitTestWithNpm")
 
   git_checkout:
-    executor: groovy-executor
+    parameters:
+      sourceCodeUrl:
+        type: string
+      sourceCodeBranchName:
+        type: string
+      gitSourceCodeCredential:
+        type: string
+    executor: node-executor
     steps:
       - run:
           name: Git Checkout Source Code Repo
-          command: groovy -e "${gitCheckoutScript}.gitCheckout('${SOURCE_CODE_BRANCH_NAME}', '${GIT_SOURCE_CODE_URL}', '${GIT_SOURCE_CODE_CREDENTIAL}')"
+          command: groovy -e "${gitCheckoutScript}.gitCheckout('${SOURCE_CODE_BRANCH_NAME}', '${SOURCE_CODE_URL}', '${GIT_SOURCE_CODE_CREDENTIAL}')"
+
+  install_dependencies:
+    executor: node-executor
+    steps:
+      - run:
+          name: Install Dependencies
+          command: npm install
 
   build:
-    executor: groovy-executor
+    executor: node-executor
     steps:
       - run:
           name: Build
-          command: groovy -e "${buildWithNpmScript}.build()"
+          command: npm run build
 
   test:
-    executor: groovy-executor
+    executor: node-executor
     steps:
       - run:
           name: Unit Test
-          command: groovy -e "${unitTestWithNpmScript}.unitTest()"
+          command: npm test
 
   sonar_analysis:
-    executor: groovy-executor
+    executor: node-executor
     steps:
       - run:
           name: SonarQube Analysis
@@ -65,7 +94,7 @@ jobs:
 
   docker_build:
     docker:
-      - image: my-custom-groovy-image
+      - image: circleci/node:14
     steps:
       - setup_remote_docker:
           version: 20.10.7
@@ -75,7 +104,7 @@ jobs:
 
   docker_scan:
     docker:
-      - image: my-custom-groovy-image
+      - image: circleci/node:14
     steps:
       - setup_remote_docker:
           version: 20.10.7
@@ -85,7 +114,7 @@ jobs:
 
   docker_publish:
     docker:
-      - image: my-custom-groovy-image
+      - image: circleci/node:14
     steps:
       - setup_remote_docker:
           version: 20.10.7
@@ -99,13 +128,23 @@ workflows:
   version: 2
   build_and_deploy:
     jobs:
-      - load_scripts
+      - install_groovy
+      - load_scripts:
+          baseDir: "Jenkins/shared-libraries"
+          requires:
+            - install_groovy
       - git_checkout:
+          sourceCodeUrl: "https://github.com/example/repo.git"
+          sourceCodeBranchName: "main"
+          gitSourceCodeCredential: "git-credential-id"
           requires:
             - load_scripts
-      - build:
+      - install_dependencies:
           requires:
             - git_checkout
+      - build:
+          requires:
+            - install_dependencies
       - test:
           requires:
             - build
