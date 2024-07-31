@@ -62,7 +62,7 @@ tools {
             steps {
                script {
                   def version = env.BUILD_NUMBER
-                  nexusScript.nexusuploads()
+                  nexusScript.nexusuploads(version)
           }
        }
     }
