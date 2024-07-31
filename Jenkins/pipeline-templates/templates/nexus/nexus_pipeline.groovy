@@ -62,7 +62,7 @@ tools {
             steps {
                script {
                   def version = env.BUILD_NUMBER
-                  nexusScript.nexusUpload(params.ARTIFACT_ID, params.ARTIFACT_PATH, params.ARTIFACT_TYPE, params.NEXUS_CREDENTIAL_ID, params.NEXUS_GROUP_ID ,params.NEXUS_URL, params.NEXUS_REPOSITORY, version)
+                  nexusScript.nexusUpload()
           }
        }
     }
