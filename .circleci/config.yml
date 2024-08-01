@@ -42,7 +42,7 @@ jobs:
               scriptName=$3
               scriptPath="${baseDir}/${type}/${technology}/${scriptName}.groovy"
               echo "Loading script: ${scriptPath}"  # Debugging line
-              groovy "${scriptPath}"  # Run the Groovy script
+              cat "${scriptPath}"
             }
             gitCheckoutScript=$(loadScript "vars/common/scm-util" "git" "GitCheckout")
             sonarScript=$(loadScript "vars/common" "codeAnalysis" "PerformSonarAnalysisForReactjs")
@@ -51,6 +51,13 @@ jobs:
             dockerScanScript=$(loadScript "vars/common" "dockerUtil" "DockerScan")
             buildWithNpmScript=$(loadScript "src/org/common" "build" "BuildWithNpm")
             unitTestWithNpmScript=$(loadScript "src/org/common" "unitTest" "UnitTestWithNpm")
+            echo "${gitCheckoutScript}" > gitCheckoutScript.groovy
+            echo "${sonarScript}" > sonarScript.groovy
+            echo "${dockerBuildScript}" > dockerBuildScript.groovy
+            echo "${dockerPublishScript}" > dockerPublishScript.groovy
+            echo "${dockerScanScript}" > dockerScanScript.groovy
+            echo "${buildWithNpmScript}" > buildWithNpmScript.groovy
+            echo "${unitTestWithNpmScript}" > unitTestWithNpmScript.groovy
 
   install_dependencies:
     executor: java-executor
@@ -80,7 +87,7 @@ jobs:
           name: SonarQube Analysis
           command: |
             export PATH=$PATH:/usr/local/groovy/bin
-            groovy -e "${sonarScript}.performSonarCloudAnalysis('${SONAR_PROJECT_KEY}', '${SONAR_ORGANIZATION}', '${SONAR_SOURCES_DIR}', '${SONAR_TOKEN}')"
+            groovy sonarScript.groovy.performSonarCloudAnalysis('${SONAR_PROJECT_KEY}', '${SONAR_ORGANIZATION}', '${SONAR_SOURCES_DIR}', '${SONAR_TOKEN}')
 
   docker_build:
     docker:
@@ -92,7 +99,7 @@ jobs:
           name: Docker Build
           command: |
             export PATH=$PATH:/usr/local/groovy/bin
-            groovy -e "${dockerBuildScript}.dockerBuild('${DOCKER_IMAGE_NAME}', '${DOCKER_IMAGE_TAG}')"
+            groovy dockerBuildScript.groovy.dockerBuild('${DOCKER_IMAGE_NAME}', '${DOCKER_IMAGE_TAG}')
 
   docker_scan:
     docker:
@@ -104,7 +111,7 @@ jobs:
           name: Docker Scan
           command: |
             export PATH=$PATH:/usr/local/groovy/bin
-            groovy -e "${dockerScanScript}.dockerScan('${DOCKER_IMAGE_NAME}')"
+            groovy dockerScanScript.groovy.dockerScan('${DOCKER_IMAGE_NAME}')
 
   docker_publish:
     docker:
@@ -117,7 +124,7 @@ jobs:
           command: |
             export PATH=$PATH:/usr/local/groovy/bin
             echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
-            groovy -e "${dockerPublishScript}.publishToContainer('${DOCKER_IMAGE_NAME}', '${DOCKER_REPO}', '${DOCKER_IMAGE_TAG}', '${DOCKER_CREDENTIAL}')"
+            groovy dockerPublishScript.groovy.publishToContainer('${DOCKER_IMAGE_NAME}', '${DOCKER_REPO}', '${DOCKER_IMAGE_TAG}', '${DOCKER_CREDENTIAL}')
 
 workflows:
   version: 2
