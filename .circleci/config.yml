@@ -44,7 +44,7 @@ jobs:
             ls -R
 
             # Use CIRCLE_WORKING_DIRECTORY environment variable
-            baseDir="${CIRCLE_WORKING_DIRECTORY}/${BASE_DIR}"
+            baseDir="${CIRCLE_WORKING_DIRECTORY}/${PARAM_BASE_DIR}"
             echo "Base directory: ${baseDir}"
             
             # Debugging: List contents of base directory
