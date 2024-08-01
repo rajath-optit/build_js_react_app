@@ -44,7 +44,7 @@ jobs:
             ls -R
 
             # Use absolute path for base directory
-            baseDir="${CIRCLE_WORKING_DIRECTORY}/${CIRCLE_JOB}/${PARAM_BASE_DIR}"
+            baseDir="${CIRCLE_WORKING_DIRECTORY}/${CIRCLE_JOB}/${BASE_DIR}"
             echo "Base directory: ${baseDir}"
             
             # Debugging: List contents of base directory
