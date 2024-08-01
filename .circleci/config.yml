@@ -43,8 +43,8 @@ jobs:
             echo "Contents of current working directory:"
             ls -R
 
-            # Use absolute path for base directory
-            baseDir="${CIRCLE_WORKING_DIRECTORY}/${CIRCLE_JOB}/${BASE_DIR}"
+            # Directly use the baseDir provided
+            baseDir="${BASE_DIR}"
             echo "Base directory: ${baseDir}"
             
             # Debugging: List contents of base directory
