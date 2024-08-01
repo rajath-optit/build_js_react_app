@@ -31,7 +31,6 @@ jobs:
         default: "Jenkins/shared-libraries"
     executor: java-executor
     steps:
-      - checkout
       - run:
           name: Load Scripts
           command: |
@@ -53,28 +52,9 @@ jobs:
             buildWithNpmScript=$(loadScript "src/org/common" "build" "BuildWithNpm")
             unitTestWithNpmScript=$(loadScript "src/org/common" "unitTest" "UnitTestWithNpm")
 
-  git_checkout:
-    parameters:
-      sourceCodeUrl:
-        type: string
-      sourceCodeBranchName:
-        type: string
-      gitSourceCodeCredential:
-        type: string
-    executor: java-executor
-    steps:
-      - checkout
-      - run:
-          name: Git Checkout Source Code Repo
-          command: |
-            git config --global credential.helper store
-            echo "https://${GIT_USER}:${GIT_TOKEN}@${SOURCE_CODE_URL}" > ~/.git-credentials
-            git clone -b "${SOURCE_CODE_BRANCH_NAME}" "${SOURCE_CODE_URL}"
-
   install_dependencies:
     executor: java-executor
     steps:
-      - checkout
       - run:
           name: Install Dependencies
           command: npm install
@@ -82,7 +62,6 @@ jobs:
   build:
     executor: java-executor
     steps:
-      - checkout
       - run:
           name: Build
           command: npm run build
@@ -90,7 +69,6 @@ jobs:
   test:
     executor: java-executor
     steps:
-      - checkout
       - run:
           name: Unit Test
           command: npm test
@@ -98,7 +76,6 @@ jobs:
   sonar_analysis:
     executor: java-executor
     steps:
-      - checkout
       - run:
           name: SonarQube Analysis
           command: |
@@ -151,15 +128,9 @@ workflows:
           baseDir: "Jenkins/shared-libraries"
           requires:
             - install_groovy
-      - git_checkout:
-          sourceCodeUrl: "https://github.com/example/repo.git"
-          sourceCodeBranchName: "main"
-          gitSourceCodeCredential: "git-credential-id"
-          requires:
-            - load_scripts
       - install_dependencies:
           requires:
-            - git_checkout
+            - load_scripts
       - build:
           requires:
             - install_dependencies
