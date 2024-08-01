@@ -35,11 +35,19 @@ jobs:
           name: Load Scripts
           command: |
             export PATH=$PATH:/usr/local/groovy/bin  # Ensure PATH includes Groovy bin directory
+
+            # Debugging: Show current working directory
+            echo "Current working directory: $(pwd)"
+
+            # Debugging: List contents of current working directory
+            echo "Contents of current working directory:"
+            ls -R
+
             baseDir="${CIRCLE_WORKING_DIRECTORY}/${BASE_DIR}"
-            
             echo "Base directory: ${baseDir}"
             
             # Debugging: List contents of base directory
+            echo "Contents of base directory:"
             ls -R ${baseDir}
             
             loadScript() {
