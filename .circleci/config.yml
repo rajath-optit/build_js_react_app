@@ -43,20 +43,26 @@ jobs:
             echo "Contents of current working directory:"
             ls -R
 
+            # Use CIRCLE_WORKING_DIRECTORY environment variable
             baseDir="${CIRCLE_WORKING_DIRECTORY}/${BASE_DIR}"
             echo "Base directory: ${baseDir}"
             
             # Debugging: List contents of base directory
             echo "Contents of base directory:"
-            ls -R ${baseDir}
-            
+            ls -R "${baseDir}" || echo "Base directory does not exist"
+
             loadScript() {
               type=$1
               technology=$2
               scriptName=$3
               scriptPath="${baseDir}/${type}/${technology}/${scriptName}.groovy"
               echo "Loading script: ${scriptPath}"  # Debugging line
-              cat "${scriptPath}"
+              if [ -f "${scriptPath}" ]; then
+                cat "${scriptPath}"
+              else
+                echo "Script not found: ${scriptPath}"
+                exit 1
+              fi
             }
 
             gitCheckoutScript=$(loadScript "vars/common/scm-util" "git" "GitCheckout")
