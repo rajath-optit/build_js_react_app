@@ -61,7 +61,8 @@ tools {
             steps {
                script {
                   def version = env.BUILD_NUMBER
-                  def artifactId = env.JOB_NAME
+                  def fullJobName = env.JOB_NAME
+                  def artifactId = fullJobName.tokenize('/').last()
                   nexusScript.nexusuploads(version, artifactId)
           }
        }
