@@ -2,6 +2,10 @@ def deployWithGradle() {
     sh "gradle clean build"
 }
 
+def deploysWithGradle() {
+    sh "./gradlew build"
+}
+
 def copyJarToRemote(credentialID, remoteHost, artifactPath, remotePath) {
   
     withCredentials([sshUserPrivateKey(credentialsId: "${credentialID}", keyFileVariable: 'SSH_PRIVATE_KEY', usernameVariable: 'SSH_USERNAME')]) {
