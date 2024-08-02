@@ -12,7 +12,6 @@ tools {
         string(name: 'GIT_URL', description: 'Git repository URL contains Source Code')
         string(name: 'GIT_BRANCH_NAME', description: 'Git Branch name')
         credentials(name: 'GIT_CREDENTIAL', description: 'Jenkins credential for Git repo', required: true)
-        string(name: 'ARTIFACT_ID', description: 'Artifact Id')
         string(name: 'ARTIFACT_PATH', description: 'Artifact Path where it generates', defaultValue: 'target/application.war')
         choice(name: 'ARTIFACT_TYPE', choices: ['war', 'jar'], description: 'Artifact Type')
         string(name: 'NEXUS_URL', description: 'Nexus URL IP:Port Ex:172.x.x.1:8081')
@@ -62,7 +61,8 @@ tools {
             steps {
                script {
                   def version = env.BUILD_NUMBER
-                  nexusScript.nexusuploads(version)
+                  def artifactId = env.JOB_NAME
+                  nexusScript.nexusuploads(version, artifactId)
           }
        }
     }
