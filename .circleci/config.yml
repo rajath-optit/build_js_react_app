@@ -93,14 +93,18 @@ jobs:
     steps:
       - run:
           name: Build
-          command: npm run build
+          command: |
+            export PATH=$PATH:/usr/local/groovy/bin
+            groovy -e "${buildWithNpmScript}.buildWithNpm()"
 
   test:
     executor: java-executor
     steps:
       - run:
           name: Unit Test
-          command: npm test
+          command: |
+            export PATH=$PATH:/usr/local/groovy/bin
+            groovy -e "${unitTestWithNpmScript}.unitTestWithNpm()"
 
   sonar_analysis:
     executor: java-executor
