@@ -3,11 +3,18 @@ version: 2.1
 executors:
   docker-executor:
     docker:
-      - image: circleci/python:3.7  # You can use any image that suits your needs
+      - image: circleci/node:16  # Adjust Node.js version as needed
 
 jobs:
   setup:
     executor: docker-executor
+    parameters:
+      GIT_SOURCE_CODE_URL:
+        type: string
+        default: "https://github.com/bharathkoptit/build_js_react_app.git"
+      SOURCE_CODE_BRANCH_NAME:
+        type: string
+        default: "master"
     steps:
       - checkout
       - run:
@@ -67,7 +74,17 @@ jobs:
 
   build:
     docker:
-      - image: circleci/node:16
+      - image: circleci/node:16  # Adjust Node.js version as needed
+    parameters:
+      DOCKER_REPO:
+        type: string
+        default: "bharathoptdocker"
+      DOCKER_IMAGE_NAME:
+        type: string
+        default: "optit-lab-service"
+      DOCKER_IMAGE_TAG:
+        type: string
+        default: "latest"
     steps:
       - checkout
       - run:
@@ -86,8 +103,6 @@ workflows:
       - build:
           requires:
             - setup
-          GIT_SOURCE_CODE_URL: "https://github.com/bharathkoptit/build_js_react_app.git"
-          SOURCE_CODE_BRANCH_NAME: "master"
           DOCKER_REPO: "bharathoptdocker"
           DOCKER_IMAGE_NAME: "optit-lab-service"
           DOCKER_IMAGE_TAG: "latest"
