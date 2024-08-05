@@ -15,6 +15,33 @@ jobs:
       SOURCE_CODE_BRANCH_NAME:
         type: string
         default: "master"
+      GIT_SOURCE_CODE_CREDENTIAL:
+        type: string
+        default: ""
+      DOCKER_REPO:
+        type: string
+        default: "bharathoptdocker"
+      DOCKER_IMAGE_NAME:
+        type: string
+        default: "optit-lab-service"
+      DOCKER_IMAGE_TAG:
+        type: string
+        default: "latest"
+      DOCKER_CREDENTIAL:
+        type: string
+        default: ""
+      SONAR_PROJECT_KEY:
+        type: string
+        default: "myreactorg_myreactorg"
+      SONAR_ORGANIZATION:
+        type: string
+        default: "myreactorg"
+      SONAR_SOURCES_DIR:
+        type: string
+        default: "."
+      SONAR_TOKEN:
+        type: string
+        default: ""
     steps:
       - checkout:
           path: ~/project
@@ -24,6 +51,12 @@ jobs:
           command: |
             echo "GIT_SOURCE_CODE_URL: << parameters.GIT_SOURCE_CODE_URL >>"
             echo "SOURCE_CODE_BRANCH_NAME: << parameters.SOURCE_CODE_BRANCH_NAME >>"
+            echo "DOCKER_REPO: << parameters.DOCKER_REPO >>"
+            echo "DOCKER_IMAGE_NAME: << parameters.DOCKER_IMAGE_NAME >>"
+            echo "DOCKER_IMAGE_TAG: << parameters.DOCKER_IMAGE_TAG >>"
+            echo "SONAR_PROJECT_KEY: << parameters.SONAR_PROJECT_KEY >>"
+            echo "SONAR_ORGANIZATION: << parameters.SONAR_ORGANIZATION >>"
+            echo "SONAR_SOURCES_DIR: << parameters.SONAR_SOURCES_DIR >>"
 
       - run:
           name: Prepare Directory
@@ -117,6 +150,40 @@ jobs:
 
   build:
     executor: node-executor
+    parameters:
+      GIT_SOURCE_CODE_URL:
+        type: string
+        default: "https://github.com/bharathkoptit/build_js_react_app.git"
+      SOURCE_CODE_BRANCH_NAME:
+        type: string
+        default: "master"
+      GIT_SOURCE_CODE_CREDENTIAL:
+        type: string
+        default: ""
+      DOCKER_REPO:
+        type: string
+        default: "bharathoptdocker"
+      DOCKER_IMAGE_NAME:
+        type: string
+        default: "optit-lab-service"
+      DOCKER_IMAGE_TAG:
+        type: string
+        default: "latest"
+      DOCKER_CREDENTIAL:
+        type: string
+        default: ""
+      SONAR_PROJECT_KEY:
+        type: string
+        default: "myreactorg_myreactorg"
+      SONAR_ORGANIZATION:
+        type: string
+        default: "myreactorg"
+      SONAR_SOURCES_DIR:
+        type: string
+        default: "."
+      SONAR_TOKEN:
+        type: string
+        default: ""
     steps:
       - checkout:
           path: ~/project
@@ -126,6 +193,12 @@ jobs:
           command: |
             echo "GIT_SOURCE_CODE_URL: << parameters.GIT_SOURCE_CODE_URL >>"
             echo "SOURCE_CODE_BRANCH_NAME: << parameters.SOURCE_CODE_BRANCH_NAME >>"
+            echo "DOCKER_REPO: << parameters.DOCKER_REPO >>"
+            echo "DOCKER_IMAGE_NAME: << parameters.DOCKER_IMAGE_NAME >>"
+            echo "DOCKER_IMAGE_TAG: << parameters.DOCKER_IMAGE_TAG >>"
+            echo "SONAR_PROJECT_KEY: << parameters.SONAR_PROJECT_KEY >>"
+            echo "SONAR_ORGANIZATION: << parameters.SONAR_ORGANIZATION >>"
+            echo "SONAR_SOURCES_DIR: << parameters.SONAR_SOURCES_DIR >>"
 
       - run:
           name: Load and Execute Build Groovy Script
@@ -156,6 +229,26 @@ workflows:
       - setup:
           GIT_SOURCE_CODE_URL: "https://github.com/bharathkoptit/build_js_react_app.git"
           SOURCE_CODE_BRANCH_NAME: "master"
+          GIT_SOURCE_CODE_CREDENTIAL: "bharathkoptit/******"
+          DOCKER_REPO: "bharathoptdocker"
+          DOCKER_IMAGE_NAME: "optit-lab-service"
+          DOCKER_IMAGE_TAG: "latest"
+          DOCKER_CREDENTIAL: "bharathoptdocker/******"
+          SONAR_PROJECT_KEY: "myreactorg_myreactorg"
+          SONAR_ORGANIZATION: "myreactorg"
+          SONAR_SOURCES_DIR: "."
+          SONAR_TOKEN: "your-sonar-token"
       - build:
           requires:
             - setup
+          GIT_SOURCE_CODE_URL: "https://github.com/bharathkoptit/build_js_react_app.git"
+          SOURCE_CODE_BRANCH_NAME: "master"
+          GIT_SOURCE_CODE_CREDENTIAL: "bharathkoptit/******"
+          DOCKER_REPO: "bharathoptdocker"
+          DOCKER_IMAGE_NAME: "optit-lab-service"
+          DOCKER_IMAGE_TAG: "latest"
+          DOCKER_CREDENTIAL: "bharathoptdocker/******"
+          SONAR_PROJECT_KEY: "myreactorg_myreactorg"
+          SONAR_ORGANIZATION: "myreactorg"
+          SONAR_SOURCES_DIR: "."
+          SONAR_TOKEN: "your-sonar-token"
