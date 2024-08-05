@@ -15,7 +15,7 @@ jobs:
         default: "https://github.com/bharathkoptit/build_js_react_app.git"
       SOURCE_CODE_BRANCH_NAME:
         type: string
-        default: "master"
+        default: "main"
 
     steps:
       - checkout:
@@ -48,28 +48,10 @@ jobs:
               exit 1
             fi
 
-      - run:
-          name: Install Dependencies
-          command: |
-            sudo apt-get update
-            sudo apt-get install -y groovy
-
-      - run:
-          name: Load Groovy Scripts
-          command: |
-            baseDir=~/project/Jenkins/shared-libraries
-
-            load_script() {
-              type=$1
-              technology=$2
-              script_name=$3
-              script_path="${baseDir}/${type}/${technology}/${script_name}.groovy"
-              echo "Loading script: ${script_path}"
-              groovy ${script_path}
-            }
-
-            load_script "vars/common/scm-util" "git" "GitCheckout"
-            load_script "vars/common" "codeAnalysis" "PerformSonarAnalysisForReactjs"
-            load_script "vars/common" "dockerUtil" "DockerUtil"
-            load_script "vars/common" "containerPublish" "DockerHubPublish"
-            load_script "vars/common" "dockerUtil" "
+workflows:
+  version: 2
+  setup_and_load:
+    jobs:
+      - setup:
+          GIT_SOURCE_CODE_URL: "https://github.com/bharathkoptit/build_js_react_app.git"
+          SOURCE_CODE_BRANCH_NAME: "main"
