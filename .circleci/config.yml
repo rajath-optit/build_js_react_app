@@ -145,7 +145,28 @@ jobs:
   build:
     executor: node-executor
     parameters:
-      # Define the same parameters here
+      GIT_SOURCE_CODE_URL:
+        type: string
+      SOURCE_CODE_BRANCH_NAME:
+        type: string
+      GIT_SOURCE_CODE_CREDENTIAL:
+        type: string
+      DOCKER_REPO:
+        type: string
+      DOCKER_IMAGE_NAME:
+        type: string
+      DOCKER_IMAGE_TAG:
+        type: string
+      DOCKER_CREDENTIAL:
+        type: string
+      SONAR_PROJECT_KEY:
+        type: string
+      SONAR_ORGANIZATION:
+        type: string
+      SONAR_SOURCES_DIR:
+        type: string
+      SONAR_TOKEN:
+        type: string
 
     steps:
       - checkout:
