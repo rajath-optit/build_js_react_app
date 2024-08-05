@@ -3,7 +3,7 @@ version: 2.1
 executors:
   default:
     docker:
-      - image: circleci/python:3.8  # Change this to the appropriate Docker image for your environment
+      - image: circleci/python:3.8  # Adjust as needed
 
 jobs:
   checkout:
@@ -23,8 +23,10 @@ jobs:
           name: Checkout Source Code Repo
           command: |
             git clone -b $SOURCE_CODE_BRANCH_NAME $GIT_SOURCE_CODE_URL source-code
+            ls -al  # List directory contents for debugging
             cd source-code
             git checkout $SOURCE_CODE_BRANCH_NAME
+            ls -al  # List contents to confirm directory structure
 
   build:
     executor: default
