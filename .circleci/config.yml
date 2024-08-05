@@ -19,7 +19,6 @@ jobs:
   git_checkout:
     executor: default
     steps:
-      - checkout
       - run:
           name: Checkout Source Code Repo
           command: |
@@ -30,7 +29,6 @@ jobs:
   build:
     executor: default
     steps:
-      - checkout
       - run:
           name: Build with npm
           command: |
@@ -41,7 +39,6 @@ jobs:
   unit_test:
     executor: default
     steps:
-      - checkout
       - run:
           name: Unit Test
           command: |
@@ -51,7 +48,6 @@ jobs:
   sonar_analysis:
     executor: default
     steps:
-      - checkout
       - run:
           name: SonarQube Analysis
           command: |
@@ -61,16 +57,15 @@ jobs:
   docker_build:
     executor: default
     steps:
-      - checkout
       - run:
           name: Docker Build
           command: |
+            cd source-code
             docker build -t $DOCKER_IMAGE_NAME:$DOCKER_IMAGE_TAG .
 
   docker_scan:
     executor: default
     steps:
-      - checkout
       - run:
           name: Docker Scan
           command: |
@@ -79,7 +74,6 @@ jobs:
   docker_publish:
     executor: default
     steps:
-      - checkout
       - run:
           name: Docker Publish
           command: |
