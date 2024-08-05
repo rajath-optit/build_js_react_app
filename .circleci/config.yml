@@ -3,7 +3,7 @@ version: 2.1
 executors:
   node-executor:
     docker:
-      - image: circleci/node:12
+      - image: circleci/node:16  # Update Node.js version as needed
 
 jobs:
   setup:
@@ -49,24 +49,16 @@ jobs:
             fi
 
       - run:
-          name: Update APT Sources
-          command: |
-            sudo sed -i 's|http://deb.debian.org/debian|http://archive.debian.org/debian|g' /etc/apt/sources.list
-            sudo sed -i 's|http://security.debian.org/debian-security|http://archive.debian.org/debian-security|g' /etc/apt/sources.list
-            sudo apt-get update
-
-      - run:
           name: Install Dependencies
           command: |
+            sudo apt-get update
             sudo apt-get install -y groovy
 
       - run:
           name: Load Groovy Scripts
           command: |
-            # Define baseDir for Jenkins shared libraries
             baseDir=~/project/Jenkins/shared-libraries
 
-            # Load scripts using dynamically constructed paths
             load_script() {
               type=$1
               technology=$2
@@ -76,20 +68,8 @@ jobs:
               groovy ${script_path}
             }
 
-            # Load scripts from 'vars' directory
             load_script "vars/common/scm-util" "git" "GitCheckout"
             load_script "vars/common" "codeAnalysis" "PerformSonarAnalysisForReactjs"
             load_script "vars/common" "dockerUtil" "DockerUtil"
             load_script "vars/common" "containerPublish" "DockerHubPublish"
-            load_script "vars/common" "dockerUtil" "DockerScan"
-            # Load scripts from 'src' directory
-            load_script "src/org/common" "build" "BuildWithNpm"
-            load_script "src/org/common" "unitTest" "UnitTestWithNpm"
-
-workflows:
-  version: 2
-  setup_and_load:
-    jobs:
-      - setup:
-          GIT_SOURCE_CODE_URL: "https://github.com/bharathkoptit/build_js_react_app.git"
-          SOURCE_CODE_BRANCH_NAME: "master"
+            load_script "vars/common" "dockerUtil" "
