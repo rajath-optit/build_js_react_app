@@ -3,12 +3,11 @@ version: 2.1
 executors:
   java-node-docker-executor:
     docker:
-      - image: circleci/python:3.9  # This image has curl and apt-get
+      - image: circleci/openjdk:11-jdk  # Using the base image with OpenJDK
     working_directory: ~/repo
     environment:
-      # Set environment variables if needed
-      GROOVY_HOME: /usr/share/groovy
-      PATH: /usr/share/groovy/bin:$PATH
+      JAVA_HOME: /usr/lib/jvm/java-11-openjdk-amd64  # Set JAVA_HOME for OpenJDK
+      PATH: /usr/lib/jvm/java-11-openjdk-amd64/bin:$PATH
 
 jobs:
   install_dependencies:
@@ -20,19 +19,9 @@ jobs:
           command: |
             echo "Installing basic utilities..."
             sudo apt-get update
-            sudo apt-get install -y curl bash unzip
+            sudo apt-get install -y curl unzip
             # Verify installations
             curl --version
-            bash --version
-      - run:
-          name: Install Node.js
-          command: |
-            echo "Installing Node.js..."
-            curl -sL https://deb.nodesource.com/setup_14.x | sudo bash -
-            sudo apt-get install -y nodejs
-            # Verify Node.js installation
-            node --version
-            npm --version
 
   install_groovy:
     executor: java-node-docker-executor
@@ -46,7 +35,7 @@ jobs:
             source "$HOME/.sdkman/bin/sdkman-init.sh"
             sdk install groovy
             # Verify Groovy installation
-            groovy -version
+            groovy --version
 
   install_docker_trivy:
     executor: java-node-docker-executor
