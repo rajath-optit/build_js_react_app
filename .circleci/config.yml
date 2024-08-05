@@ -28,7 +28,7 @@ jobs:
     parameters:
       baseDir:
         type: string
-        default: "build_js_react_app/Jenkins/shared-libraries"
+        default: "pipeline"
     executor: java-executor
     steps:
       - checkout  # Ensure the repository is checked out
@@ -45,7 +45,7 @@ jobs:
             ls -R
 
             # Directly use the baseDir provided
-            baseDir="${CIRCLE_JOB_PARAMETERS_BASEDIR:-build_js_react_app/Jenkins/shared-libraries}"
+            baseDir="${CIRCLE_JOB_PARAMETERS_BASEDIR:-pipeline}"
             echo "Base directory: ${baseDir}"
             
             # Debugging: List contents of base directory
@@ -53,10 +53,7 @@ jobs:
             ls -R "${baseDir}" || echo "Base directory does not exist"
 
             loadScript() {
-              type=$1
-              technology=$2
-              scriptName=$3
-              scriptPath="${baseDir}/${type}/${technology}/${scriptName}.groovy"
+              scriptPath="${baseDir}/${1}.groovy"
               echo "Loading script: ${scriptPath}"  # Debugging line
               if [ -f "${scriptPath}" ]; then
                 cat "${scriptPath}"
@@ -66,13 +63,13 @@ jobs:
               fi
             }
 
-            gitCheckoutScript=$(loadScript "vars/common/scm-util" "git" "GitCheckout")
-            sonarScript=$(loadScript "vars/common" "codeAnalysis" "PerformSonarAnalysisForReactjs")
-            dockerBuildScript=$(loadScript "vars/common" "dockerUtil" "DockerUtil")
-            dockerPublishScript=$(loadScript "vars/common" "containerPublish" "DockerHubPublish")
-            dockerScanScript=$(loadScript "vars/common" "dockerUtil" "DockerScan")
-            buildWithNpmScript=$(loadScript "src/org/common" "build" "BuildWithNpm")
-            unitTestWithNpmScript=$(loadScript "src/org/common" "unitTest" "UnitTestWithNpm")
+            gitCheckoutScript=$(loadScript "scm-util/git/GitCheckout")
+            sonarScript=$(loadScript "codeAnalysis/PerformSonarAnalysisForReactjs")
+            dockerBuildScript=$(loadScript "dockerUtil/DockerUtil")
+            dockerPublishScript=$(loadScript "containerPublish/DockerHubPublish")
+            dockerScanScript=$(loadScript "dockerUtil/DockerScan")
+            buildWithNpmScript=$(loadScript "build/BuildWithNpm")
+            unitTestWithNpmScript=$(loadScript "unitTest/UnitTestWithNpm")
 
             echo "${gitCheckoutScript}" > gitCheckoutScript.groovy
             echo "${sonarScript}" > sonarScript.groovy
@@ -159,7 +156,7 @@ workflows:
     jobs:
       - install_groovy
       - load_scripts:
-          baseDir: "build_js_react_app/Jenkins/shared-libraries"
+          baseDir: "pipeline"
           requires:
             - install_groovy
       - install_dependencies:
