@@ -1,20 +1,18 @@
 version: 2.1
-
 executors:
   node-executor:
     docker:
-      - image: circleci/node:16  # Update Node.js version as needed
-
+      - image: 'circleci/node:16'
 jobs:
   setup:
     executor: node-executor
     parameters:
       GIT_SOURCE_CODE_URL:
         type: string
-        default: "https://github.com/bharathkoptit/build_js_react_app.git"
+        default: 'https://github.com/bharathkoptit/build_js_react_app.git'
       SOURCE_CODE_BRANCH_NAME:
         type: string
-        default: "master"
+        default: master
       GIT_SOURCE_CODE_CREDENTIAL:
         type: string
       DOCKER_REPO:
@@ -33,11 +31,9 @@ jobs:
         type: string
       SONAR_TOKEN:
         type: string
-
     steps:
       - checkout:
           path: ~/project
-
       - run:
           name: Install Groovy
           command: |
@@ -51,7 +47,6 @@ jobs:
             else
               echo "Groovy is already installed"
             fi
-
       - run:
           name: Prepare Directory
           command: |
@@ -59,26 +54,26 @@ jobs:
               rm -rf ~/project
             fi
             mkdir -p ~/project
-
       - run:
           name: Checkout Repository
-          command: |
+          command: >
             git clone ${CIRCLE_JOB_GIT_SOURCE_CODE_URL} ~/project
+
             cd ~/project
-            if git show-ref --verify --quiet refs/heads/${CIRCLE_JOB_SOURCE_CODE_BRANCH_NAME}; then
+
+            if git show-ref --verify --quiet
+            refs/heads/${CIRCLE_JOB_SOURCE_CODE_BRANCH_NAME}; then
               git checkout ${CIRCLE_JOB_SOURCE_CODE_BRANCH_NAME}
             else
               echo "Branch '${CIRCLE_JOB_SOURCE_CODE_BRANCH_NAME}' not found. Available branches:"
               git branch -r
               exit 1
             fi
-
       - run:
           name: Install Node.js Dependencies
           command: |
             cd ~/project
             npm install
-
       - run:
           name: Check Docker Installation
           command: |
@@ -100,7 +95,6 @@ jobs:
             else
               echo "Docker is already installed"
             fi
-
       - run:
           name: Load and Execute Groovy Scripts
           command: |
@@ -124,7 +118,6 @@ jobs:
             # Load and execute required scripts
             loadAndExecuteGroovyScript "src/org/common" "build" "BuildWithNpm"
             # Add additional script executions as needed
-
   build:
     executor: node-executor
     parameters:
@@ -150,23 +143,28 @@ jobs:
         type: string
       SONAR_TOKEN:
         type: string
-
     steps:
       - checkout:
           path: ~/project
-
       - run:
           name: Print Parameters
-          command: |
+          command: >
             echo "GIT_SOURCE_CODE_URL: ${CIRCLE_JOB_GIT_SOURCE_CODE_URL}"
-            echo "SOURCE_CODE_BRANCH_NAME: ${CIRCLE_JOB_SOURCE_CODE_BRANCH_NAME}"
-            echo "DOCKER_REPO: ${CIRCLE_JOB_DOCKER_REPO}"
-            echo "DOCKER_IMAGE_NAME: ${CIRCLE_JOB_DOCKER_IMAGE_NAME}"
-            echo "DOCKER_IMAGE_TAG: ${CIRCLE_JOB_DOCKER_IMAGE_TAG}"
-            echo "SONAR_PROJECT_KEY: ${CIRCLE_JOB_SONAR_PROJECT_KEY}"
-            echo "SONAR_ORGANIZATION: ${CIRCLE_JOB_SONAR_ORGANIZATION}"
-            echo "SONAR_SOURCES_DIR: ${CIRCLE_JOB_SONAR_SOURCES_DIR}"
 
+            echo "SOURCE_CODE_BRANCH_NAME:
+            ${CIRCLE_JOB_SOURCE_CODE_BRANCH_NAME}"
+
+            echo "DOCKER_REPO: ${CIRCLE_JOB_DOCKER_REPO}"
+
+            echo "DOCKER_IMAGE_NAME: ${CIRCLE_JOB_DOCKER_IMAGE_NAME}"
+
+            echo "DOCKER_IMAGE_TAG: ${CIRCLE_JOB_DOCKER_IMAGE_TAG}"
+
+            echo "SONAR_PROJECT_KEY: ${CIRCLE_JOB_SONAR_PROJECT_KEY}"
+
+            echo "SONAR_ORGANIZATION: ${CIRCLE_JOB_SONAR_ORGANIZATION}"
+
+            echo "SONAR_SOURCES_DIR: ${CIRCLE_JOB_SONAR_SOURCES_DIR}"
       - run:
           name: Load and Execute Build Groovy Script
           command: |
@@ -188,34 +186,33 @@ jobs:
             }
 
             loadAndExecuteGroovyScript "src/org/common" "build" "BuildWithNpm"
-
 workflows:
   version: 2
   setup_and_build:
     jobs:
       - setup:
-          GIT_SOURCE_CODE_URL: "https://github.com/bharathkoptit/build_js_react_app.git"
-          SOURCE_CODE_BRANCH_NAME: "master"
-          GIT_SOURCE_CODE_CREDENTIAL: "bharathkoptit/******"
-          DOCKER_REPO: "bharathoptdocker"
-          DOCKER_IMAGE_NAME: "optit-lab-service"
-          DOCKER_IMAGE_TAG: "latest"
-          DOCKER_CREDENTIAL: "bharathoptdocker/******"
-          SONAR_PROJECT_KEY: "myreactorg_myreactorg"
-          SONAR_ORGANIZATION: "myreactorg"
-          SONAR_SOURCES_DIR: "."
-          SONAR_TOKEN: "your-sonar-token"
+          GIT_SOURCE_CODE_URL: 'https://github.com/bharathkoptit/build_js_react_app.git'
+          SOURCE_CODE_BRANCH_NAME: master
+          GIT_SOURCE_CODE_CREDENTIAL: bharathkoptit/******
+          DOCKER_REPO: bharathoptdocker
+          DOCKER_IMAGE_NAME: optit-lab-service
+          DOCKER_IMAGE_TAG: latest
+          DOCKER_CREDENTIAL: bharathoptdocker/******
+          SONAR_PROJECT_KEY: myreactorg_myreactorg
+          SONAR_ORGANIZATION: myreactorg
+          SONAR_SOURCES_DIR: .
+          SONAR_TOKEN: your-sonar-token
       - build:
           requires:
             - setup
-          GIT_SOURCE_CODE_URL: "https://github.com/bharathkoptit/build_js_react_app.git"
-          SOURCE_CODE_BRANCH_NAME: "master"
-          GIT_SOURCE_CODE_CREDENTIAL: "bharathkoptit/******"
-          DOCKER_REPO: "bharathoptdocker"
-          DOCKER_IMAGE_NAME: "optit-lab-service"
-          DOCKER_IMAGE_TAG: "latest"
-          DOCKER_CREDENTIAL: "bharathoptdocker/******"
-          SONAR_PROJECT_KEY: "myreactorg_myreactorg"
-          SONAR_ORGANIZATION: "myreactorg"
-          SONAR_SOURCES_DIR: "."
-          SONAR_TOKEN: "your-sonar-token"
+          GIT_SOURCE_CODE_URL: 'https://github.com/bharathkoptit/build_js_react_app.git'
+          SOURCE_CODE_BRANCH_NAME: master
+          GIT_SOURCE_CODE_CREDENTIAL: bharathkoptit/******
+          DOCKER_REPO: bharathoptdocker
+          DOCKER_IMAGE_NAME: optit-lab-service
+          DOCKER_IMAGE_TAG: latest
+          DOCKER_CREDENTIAL: bharathoptdocker/******
+          SONAR_PROJECT_KEY: myreactorg_myreactorg
+          SONAR_ORGANIZATION: myreactorg
+          SONAR_SOURCES_DIR: .
+          SONAR_TOKEN: your-sonar-token
