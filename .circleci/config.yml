@@ -39,11 +39,15 @@ jobs:
             export PATH=$PATH:/usr/local/sonar-scanner/bin
             sonar-scanner --version
       - run:
-          name: Install Docker
+          name: Check Docker Installation
           command: |
-            curl -fsSL https://get.docker.com -o get-docker.sh
-            sh get-docker.sh
-            sudo usermod -aG docker $USER
+            if ! command -v docker &> /dev/null; then
+              echo "Docker not found, installing Docker..."
+              curl -fsSL https://get.docker.com -o get-docker.sh
+              sudo sh get-docker.sh
+            else
+              echo "Docker is already installed."
+            fi
             docker --version
 
   load_scripts:
