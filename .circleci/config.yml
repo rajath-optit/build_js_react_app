@@ -43,8 +43,8 @@ jobs:
           command: |
             if ! command -v groovy &> /dev/null; then
               sudo apt-get update
-              sudo apt-get install -y wget openjdk-11-jdk
-              wget https://dl.bintray.com/groovy/maven/groovy-sdk-3.0.9.zip
+              sudo apt-get install -y wget openjdk-11-jdk unzip
+              wget https://downloads.apache.org/groovy/3.0.9/distributions/groovy-sdk-3.0.9.zip
               unzip groovy-sdk-3.0.9.zip
               sudo mv groovy-3.0.9 /opt/groovy
               sudo ln -s /opt/groovy/bin/groovy /usr/local/bin/groovy
@@ -106,16 +106,6 @@ jobs:
               sudo apt-get install -y docker-ce docker-ce-cli containerd.io
             else
               echo "Docker is already installed"
-            fi
-
-      - run:
-          name: Check Groovy Installation
-          command: |
-            if ! command -v groovy &> /dev/null; then
-              sudo apt-get update
-              sudo apt-get install -y groovy
-            else
-              echo "Groovy is already installed"
             fi
 
       - run:
