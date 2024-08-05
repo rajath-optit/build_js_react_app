@@ -53,21 +53,6 @@ jobs:
             fi
 
       - run:
-          name: Install Groovy
-          command: |
-            if ! command -v groovy &> /dev/null; then
-              sudo apt-get update
-              sudo apt-get install -y wget openjdk-11-jdk unzip
-              wget https://downloads.apache.org/groovy/{latest-version}/distributions/groovy-sdk-{latest-version}.zip
-              unzip groovy-sdk-{latest-version}.zip
-              sudo mv groovy-{latest-version} /opt/groovy
-              sudo ln -s /opt/groovy/bin/groovy /usr/local/bin/groovy
-            else
-              echo "Groovy is already installed"
-           fi
-
-
-      - run:
           name: Prepare Directory
           command: |
             if [ -d ~/project ]; then
@@ -78,12 +63,12 @@ jobs:
       - run:
           name: Checkout Repository
           command: |
-            git clone << parameters.GIT_SOURCE_CODE_URL >> ~/project
+            git clone ${CIRCLE_JOB_GIT_SOURCE_CODE_URL} ~/project
             cd ~/project
-            if git show-ref --verify --quiet refs/heads/<< parameters.SOURCE_CODE_BRANCH_NAME >>; then
-              git checkout << parameters.SOURCE_CODE_BRANCH_NAME >>
+            if git show-ref --verify --quiet refs/heads/${CIRCLE_JOB_SOURCE_CODE_BRANCH_NAME}; then
+              git checkout ${CIRCLE_JOB_SOURCE_CODE_BRANCH_NAME}
             else
-              echo "Branch '<< parameters.SOURCE_CODE_BRANCH_NAME >>' not found. Available branches:"
+              echo "Branch '${CIRCLE_JOB_SOURCE_CODE_BRANCH_NAME}' not found. Available branches:"
               git branch -r
               exit 1
             fi
@@ -173,14 +158,14 @@ jobs:
       - run:
           name: Print Parameters
           command: |
-            echo "GIT_SOURCE_CODE_URL: << parameters.GIT_SOURCE_CODE_URL >>"
-            echo "SOURCE_CODE_BRANCH_NAME: << parameters.SOURCE_CODE_BRANCH_NAME >>"
-            echo "DOCKER_REPO: << parameters.DOCKER_REPO >>"
-            echo "DOCKER_IMAGE_NAME: << parameters.DOCKER_IMAGE_NAME >>"
-            echo "DOCKER_IMAGE_TAG: << parameters.DOCKER_IMAGE_TAG >>"
-            echo "SONAR_PROJECT_KEY: << parameters.SONAR_PROJECT_KEY >>"
-            echo "SONAR_ORGANIZATION: << parameters.SONAR_ORGANIZATION >>"
-            echo "SONAR_SOURCES_DIR: << parameters.SONAR_SOURCES_DIR >>"
+            echo "GIT_SOURCE_CODE_URL: ${CIRCLE_JOB_GIT_SOURCE_CODE_URL}"
+            echo "SOURCE_CODE_BRANCH_NAME: ${CIRCLE_JOB_SOURCE_CODE_BRANCH_NAME}"
+            echo "DOCKER_REPO: ${CIRCLE_JOB_DOCKER_REPO}"
+            echo "DOCKER_IMAGE_NAME: ${CIRCLE_JOB_DOCKER_IMAGE_NAME}"
+            echo "DOCKER_IMAGE_TAG: ${CIRCLE_JOB_DOCKER_IMAGE_TAG}"
+            echo "SONAR_PROJECT_KEY: ${CIRCLE_JOB_SONAR_PROJECT_KEY}"
+            echo "SONAR_ORGANIZATION: ${CIRCLE_JOB_SONAR_ORGANIZATION}"
+            echo "SONAR_SOURCES_DIR: ${CIRCLE_JOB_SONAR_SOURCES_DIR}"
 
       - run:
           name: Load and Execute Build Groovy Script
