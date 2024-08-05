@@ -28,7 +28,7 @@ jobs:
     parameters:
       baseDir:
         type: string
-        default: "pipeline"
+        default: "build_js_react_app/Jenkins/shared-libraries"
     executor: java-executor
     steps:
       - checkout  # Ensure the repository is checked out
@@ -45,7 +45,7 @@ jobs:
             ls -R
 
             # Directly use the baseDir provided
-            baseDir="${CIRCLE_JOB_PARAMETERS_BASEDIR:-pipeline}"
+            baseDir="${CIRCLE_JOB_PARAMETERS_BASEDIR:-build_js_react_app/Jenkins/shared-libraries}"
             echo "Base directory: ${baseDir}"
             
             # Debugging: List contents of base directory
@@ -93,7 +93,7 @@ jobs:
           name: Build
           command: |
             export PATH=$PATH:/usr/local/groovy/bin
-            groovy -e "${buildWithNpmScript}.buildWithNpm()"
+            groovy -e "new GroovyShell().evaluate(new File('buildWithNpmScript.groovy'))"
 
   test:
     executor: java-executor
@@ -102,7 +102,7 @@ jobs:
           name: Unit Test
           command: |
             export PATH=$PATH:/usr/local/groovy/bin
-            groovy -e "${unitTestWithNpmScript}.unitTestWithNpm()"
+            groovy -e "new GroovyShell().evaluate(new File('unitTestWithNpmScript.groovy'))"
 
   sonar_analysis:
     executor: java-executor
@@ -111,7 +111,7 @@ jobs:
           name: SonarQube Analysis
           command: |
             export PATH=$PATH:/usr/local/groovy/bin
-            groovy -e "${sonarScript}.performSonarCloudAnalysis('${SONAR_PROJECT_KEY}', '${SONAR_ORGANIZATION}', '${SONAR_SOURCES_DIR}', '${SONAR_TOKEN}')"
+            groovy -e "new GroovyShell().evaluate(new File('sonarScript.groovy'))"
 
   docker_build:
     docker:
@@ -123,7 +123,7 @@ jobs:
           name: Docker Build
           command: |
             export PATH=$PATH:/usr/local/groovy/bin
-            groovy -e "${dockerBuildScript}.dockerBuild('${DOCKER_IMAGE_NAME}', '${DOCKER_IMAGE_TAG}')"
+            groovy -e "new GroovyShell().evaluate(new File('dockerBuildScript.groovy'))"
 
   docker_scan:
     docker:
@@ -135,7 +135,7 @@ jobs:
           name: Docker Scan
           command: |
             export PATH=$PATH:/usr/local/groovy/bin
-            groovy -e "${dockerScanScript}.dockerScan('${DOCKER_IMAGE_NAME}')"
+            groovy -e "new GroovyShell().evaluate(new File('dockerScanScript.groovy'))"
 
   docker_publish:
     docker:
@@ -148,7 +148,7 @@ jobs:
           command: |
             export PATH=$PATH:/usr/local/groovy/bin
             echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
-            groovy -e "${dockerPublishScript}.publishToContainer('${DOCKER_IMAGE_NAME}', '${DOCKER_REPO}', '${DOCKER_IMAGE_TAG}', '${DOCKER_CREDENTIAL}')"
+            groovy -e "new GroovyShell().evaluate(new File('dockerPublishScript.groovy'))"
 
 workflows:
   version: 2
@@ -156,7 +156,7 @@ workflows:
     jobs:
       - install_groovy
       - load_scripts:
-          baseDir: "pipeline"
+          baseDir: "build_js_react_app/Jenkins/shared-libraries"
           requires:
             - install_groovy
       - install_dependencies:
