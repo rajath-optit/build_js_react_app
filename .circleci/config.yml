@@ -18,14 +18,22 @@ jobs:
         default: "main"
 
     steps:
+      - checkout:
+          path: ~/project
+
       - run:
           name: Print Parameters
           command: |
             echo "GIT_SOURCE_CODE_URL: << parameters.GIT_SOURCE_CODE_URL >>"
             echo "SOURCE_CODE_BRANCH_NAME: << parameters.SOURCE_CODE_BRANCH_NAME >>"
 
-      - checkout:
-          path: ~/project
+      - run:
+          name: Prepare Directory
+          command: |
+            if [ -d ~/project ]; then
+              rm -rf ~/project
+            fi
+            mkdir -p ~/project
 
       - run:
           name: Checkout Repository
@@ -35,7 +43,7 @@ jobs:
             git checkout << parameters.SOURCE_CODE_BRANCH_NAME >>
 
       - run:
-          name: Install Groovy
+          name: Install Dependencies
           command: |
             sudo apt-get update
             sudo apt-get install -y groovy
@@ -72,4 +80,4 @@ workflows:
     jobs:
       - setup:
           GIT_SOURCE_CODE_URL: "https://github.com/bharathkoptit/build_js_react_app.git"
-          SOURCE_CODE_BRANCH_NAME: "master"
+          SOURCE_CODE_BRANCH_NAME: "main"
