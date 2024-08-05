@@ -28,7 +28,7 @@ jobs:
     parameters:
       baseDir:
         type: string
-        default: "build_js_react_app/Jenkins/shared-libraries"
+        default: "Jenkins/shared-libraries"
     executor: java-executor
     steps:
       - checkout  # Ensure the repository is checked out
@@ -45,7 +45,7 @@ jobs:
             ls -R
 
             # Directly use the baseDir provided
-            baseDir="${CIRCLE_JOB_PARAMETERS_BASEDIR:-build_js_react_app/Jenkins/shared-libraries}"
+            baseDir="${CIRCLE_JOB_PARAMETERS_BASEDIR:-Jenkins/shared-libraries}"
             echo "Base directory: ${baseDir}"
             
             # Debugging: List contents of base directory
@@ -63,13 +63,13 @@ jobs:
               fi
             }
 
-            gitCheckoutScript=$(loadScript "scm-util/git/GitCheckout")
-            sonarScript=$(loadScript "codeAnalysis/PerformSonarAnalysisForReactjs")
-            dockerBuildScript=$(loadScript "dockerUtil/DockerUtil")
-            dockerPublishScript=$(loadScript "containerPublish/DockerHubPublish")
-            dockerScanScript=$(loadScript "dockerUtil/DockerScan")
-            buildWithNpmScript=$(loadScript "build/BuildWithNpm")
-            unitTestWithNpmScript=$(loadScript "unitTest/UnitTestWithNpm")
+            gitCheckoutScript=$(loadScript "vars/common/scm-util/git/GitCheckout")
+            sonarScript=$(loadScript "vars/common/codeAnalysis/PerformSonarAnalysisForReactjs")
+            dockerBuildScript=$(loadScript "vars/common/dockerUtil/DockerUtil")
+            dockerPublishScript=$(loadScript "vars/common/containerPublish/DockerHubPublish")
+            dockerScanScript=$(loadScript "vars/common/dockerUtil/DockerScan")
+            buildWithNpmScript=$(loadScript "vars/common/build/BuildWithNpm")
+            unitTestWithNpmScript=$(loadScript "vars/common/unitTest/UnitTestWithNpm")
 
             echo "${gitCheckoutScript}" > gitCheckoutScript.groovy
             echo "${sonarScript}" > sonarScript.groovy
@@ -156,7 +156,7 @@ workflows:
     jobs:
       - install_groovy
       - load_scripts:
-          baseDir: "build_js_react_app/Jenkins/shared-libraries"
+          baseDir: "Jenkins/shared-libraries"
           requires:
             - install_groovy
       - install_dependencies:
