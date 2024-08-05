@@ -50,4 +50,67 @@ jobs:
           name: Install Groovy
           command: |
             sudo apt-get update
-      
+            sudo apt-get install -y wget unzip
+            wget https://dl.bintray.com/groovy/maven/groovy-sdk-3.0.9.zip || { echo "Failed to download Groovy"; exit 1; }
+            unzip groovy-sdk-3.0.9.zip -d /usr/local
+            sudo ln -s /usr/local/groovy-3.0.9/bin/groovy /usr/bin/groovy
+      - run:
+          name: Load and Execute Groovy Scripts
+          command: |
+            cd ~/project
+            baseDir="${PWD}/Jenkins/shared-libraries"
+            loadAndExecuteGroovyScript() {
+              type=$1
+              technology=$2
+              scriptName=$3
+              scriptPath="${baseDir}/${type}/${technology}/${scriptName}.groovy"
+              if [ -f ${scriptPath} ]; then
+                echo "Executing ${scriptPath}"
+                groovy ${scriptPath}
+              else
+                echo "Script ${scriptPath} not found!"
+                exit 1
+              fi
+            }
+            loadAndExecuteGroovyScript "vars/common/scm-util" "git" "GitCheckout"
+            loadAndExecuteGroovyScript "vars/common" "codeAnalysis" "PerformSonarAnalysisForReactjs"
+            loadAndExecuteGroovyScript "vars/common" "dockerUtil" "DockerUtil"
+            loadAndExecuteGroovyScript "vars/common" "containerPublish" "DockerHubPublish"
+            loadAndExecuteGroovyScript "vars/common" "dockerUtil" "DockerScan"
+            loadAndExecuteGroovyScript "src/org/common" "build" "BuildWithNpm"
+            loadAndExecuteGroovyScript "src/org/common" "unitTest" "UnitTestWithNpm"
+
+  build:
+    docker:
+      - image: circleci/node:16  # Adjust Node.js version as needed
+    parameters:
+      DOCKER_REPO:
+        type: string
+        default: "bharathoptdocker"
+      DOCKER_IMAGE_NAME:
+        type: string
+        default: "optit-lab-service"
+      DOCKER_IMAGE_TAG:
+        type: string
+        default: "latest"
+    steps:
+      - checkout
+      - run:
+          name: Build Docker Image
+          command: |
+            cd ~/project
+            docker build -t << parameters.DOCKER_REPO >>/<< parameters.DOCKER_IMAGE_NAME >>:<< parameters.DOCKER_IMAGE_TAG >> .
+
+workflows:
+  version: 2
+  setup_and_build:
+    jobs:
+      - setup:
+          GIT_SOURCE_CODE_URL: "https://github.com/bharathkoptit/build_js_react_app.git"
+          SOURCE_CODE_BRANCH_NAME: "master"
+      - build:
+          requires:
+            - setup
+          DOCKER_REPO: "bharathoptdocker"
+          DOCKER_IMAGE_NAME: "optit-lab-service"
+          DOCKER_IMAGE_TAG: "latest"
