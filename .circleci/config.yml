@@ -80,4 +80,4 @@ workflows:
     jobs:
       - setup:
           GIT_SOURCE_CODE_URL: "https://github.com/bharathkoptit/build_js_react_app.git"
-          SOURCE_CODE_BRANCH_NAME: "main"
+          SOURCE_CODE_BRANCH_NAME: "master"
