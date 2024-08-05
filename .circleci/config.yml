@@ -19,22 +19,7 @@ jobs:
             sudo apt-get update
             sudo apt-get install -y curl gnupg
 
-      # Install Docker
-      - run:
-          name: Install Docker
-          command: |
-            curl -fsSL https://get.docker.com -o get-docker.sh
-            sudo sh get-docker.sh
-            sudo usermod -aG docker $USER
-
-      # Install Docker tools
-      - run:
-          name: Install Docker tools
-          command: |
-            curl -fsSL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/trivy-install.sh | sudo bash
-            curl -fsSL https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-linux.zip -o sonar-scanner.zip
-            unzip sonar-scanner.zip -d /opt
-            sudo ln -s /opt/sonar-scanner-*/bin/sonar-scanner /usr/local/bin/sonar-scanner
+   
 
       # Install Java and Groovy
       - run:
