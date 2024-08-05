@@ -12,34 +12,64 @@ jobs:
     parameters:
       GIT_SOURCE_CODE_URL:
         type: string
-        default: "default_git_repo_url"
+        default: "https://github.com/bharathkoptit/build_js_react_app.git"
       SOURCE_CODE_BRANCH_NAME:
         type: string
-        default: "default_branch"
-      DOCKER_REPO:
-        type: string
-        default: "default_docker_repo"
-      DOCKER_IMAGE_NAME:
-        type: string
-        default: "default_image_name"
-      DOCKER_IMAGE_TAG:
-        type: string
-        default: "default_image_tag"
-      SONAR_PROJECT_KEY:
-        type: string
-        default: "default_sonar_project_key"
-      SONAR_ORGANIZATION:
-        type: string
-        default: "default_sonar_org"
-      SONAR_SOURCES_DIR:
-        type: string
-        default: "default_sonar_source_dir"
+        default: "main"
 
     steps:
-      - checkout
-
       - run:
           name: Print Parameters
           command: |
             echo "GIT_SOURCE_CODE_URL: << parameters.GIT_SOURCE_CODE_URL >>"
-            echo "SOURCE_CODE_BRANCH_NAME: <<
+            echo "SOURCE_CODE_BRANCH_NAME: << parameters.SOURCE_CODE_BRANCH_NAME >>"
+
+      - checkout:
+          path: ~/project
+
+      - run:
+          name: Checkout Repository
+          command: |
+            git clone << parameters.GIT_SOURCE_CODE_URL >> ~/project
+            cd ~/project
+            git checkout << parameters.SOURCE_CODE_BRANCH_NAME >>
+
+      - run:
+          name: Install Groovy
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y groovy
+
+      - run:
+          name: Load Groovy Scripts
+          command: |
+            # Define baseDir for Jenkins shared libraries
+            baseDir=~/project/Jenkins/shared-libraries
+
+            # Load scripts using dynamically constructed paths
+            load_script() {
+              type=$1
+              technology=$2
+              script_name=$3
+              script_path="${baseDir}/${type}/${technology}/${script_name}.groovy"
+              echo "Loading script: ${script_path}"
+              groovy ${script_path}
+            }
+
+            # Load scripts from 'vars' directory
+            load_script "vars/common/scm-util" "git" "GitCheckout"
+            load_script "vars/common" "codeAnalysis" "PerformSonarAnalysisForReactjs"
+            load_script "vars/common" "dockerUtil" "DockerUtil"
+            load_script "vars/common" "containerPublish" "DockerHubPublish"
+            load_script "vars/common" "dockerUtil" "DockerScan"
+            # Load scripts from 'src' directory
+            load_script "src/org/common" "build" "BuildWithNpm"
+            load_script "src/org/common" "unitTest" "UnitTestWithNpm"
+
+workflows:
+  version: 2
+  setup_and_load:
+    jobs:
+      - setup:
+          GIT_SOURCE_CODE_URL: "https://github.com/bharathkoptit/build_js_react_app.git"
+          SOURCE_CODE_BRANCH_NAME: "main"
