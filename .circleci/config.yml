@@ -4,11 +4,12 @@ executors:
   java-node-docker-executor:
     docker:
       - image: circleci/openjdk:11-jdk
+      - image: circleci/node:14
+    working_directory: ~/repo
     environment:
-      JAVA_HOME: /usr/local/openjdk-11
-      GROOVY_HOME: /usr/local/groovy
-      PATH: /usr/local/groovy/bin:/usr/local/openjdk-11/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-    working_directory: /home/circleci/project
+      # Set environment variables if needed
+      GROOVY_HOME: /usr/share/groovy
+      PATH: /usr/share/groovy/bin:$PATH
 
 jobs:
   install_dependencies:
@@ -16,64 +17,125 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Install Node.js and npm
+          name: Install Dependencies
           command: |
-            curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash -
-            sudo apt-get install -y nodejs
-            node --version
-            npm --version
+            echo "Installing dependencies..."
+            # Install necessary packages, e.g., for Node.js, Java, etc.
+
+  install_groovy:
+    executor: java-node-docker-executor
+    steps:
+      - checkout
       - run:
           name: Install Groovy
           command: |
-            sudo apt-get update
-            sudo apt-get install -y wget unzip
-            wget https://dl.bintray.com/groovy/maven/apache-groovy-sdk-4.0.11.zip
-            unzip apache-groovy-sdk-4.0.11.zip -d /usr/local
-            sudo mv /usr/local/apache-groovy-sdk-4.0.11 /usr/local/groovy
-            export PATH=$PATH:/usr/local/groovy/bin
-            groovy --version
+            echo "Installing Groovy..."
+            curl -s https://get.sdkman.io | bash
+            source "$HOME/.sdkman/bin/sdkman-init.sh"
+            sdk install groovy
+            # Verify Groovy installation
+            groovy -version
+
+  install_docker_trivy:
+    executor: java-node-docker-executor
+    steps:
+      - checkout
+      - run:
+          name: Install Docker Trivy
+          command: |
+            echo "Installing Docker Trivy..."
+            curl -fsSL https://github.com/aquasecurity/trivy/releases/download/v0.34.1/trivy_0.34.1_Linux-x86_64.tar.gz -o trivy.tar.gz
+            tar zxvf trivy.tar.gz -C /usr/local/bin trivy
+            # Verify Trivy installation
+            trivy --version
+
+  sonar_analysis:
+    executor: java-node-docker-executor
+    steps:
+      - checkout
       - run:
           name: Install SonarQube Scanner
           command: |
-            curl -fsSL https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.2.2472-linux.zip -o sonar-scanner.zip
-            unzip sonar-scanner.zip -d /usr/local
-            sudo mv /usr/local/sonar-scanner-4.6.2.2472-linux /usr/local/sonar-scanner
-            export PATH=$PATH:/usr/local/sonar-scanner/bin
+            echo "Installing SonarQube Scanner..."
+            curl -sSLo sonar-scanner-cli.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.7.0.2747-linux.zip
+            unzip sonar-scanner-cli.zip -d /opt
+            ln -s /opt/sonar-scanner-4.7.0.2747-linux/bin/sonar-scanner /usr/local/bin/sonar-scanner
+            # Verify SonarQube Scanner installation
             sonar-scanner --version
-      - run:
-          name: Check Docker Installation
-          command: |
-            if ! command -v docker &> /dev/null; then
-              echo "Docker not found, installing Docker..."
-              curl -fsSL https://get.docker.com -o get-docker.sh
-              sudo sh get-docker.sh
-            else
-              echo "Docker is already installed."
-            fi
-            docker --version
 
-  # Other jobs remain the same
+  build:
+    executor: java-node-docker-executor
+    steps:
+      - checkout
+      - run:
+          name: Build Project
+          command: |
+            echo "Building project..."
+            # Add build commands here
+
+  test:
+    executor: java-node-docker-executor
+    steps:
+      - checkout
+      - run:
+          name: Run Tests
+          command: |
+            echo "Running tests..."
+            # Add test commands here
+
+  docker_build:
+    executor: java-node-docker-executor
+    steps:
+      - checkout
+      - run:
+          name: Build Docker Image
+          command: |
+            echo "Building Docker image..."
+            # Add Docker build commands here
+
+  docker_scan:
+    executor: java-node-docker-executor
+    steps:
+      - checkout
+      - run:
+          name: Scan Docker Image with Trivy
+          command: |
+            echo "Scanning Docker image with Trivy..."
+            trivy image --exit-code 1 --severity CRITICAL,HIGH your-docker-image:latest
+
+  docker_publish:
+    executor: java-node-docker-executor
+    steps:
+      - checkout
+      - run:
+          name: Publish Docker Image
+          command: |
+            echo "Publishing Docker image..."
+            # Add Docker publish commands here
 
 workflows:
   version: 2
   build_and_deploy:
     jobs:
       - install_dependencies
-      - load_scripts:
+      - install_groovy:
           requires:
             - install_dependencies
+      - install_docker_trivy:
+          requires:
+            - install_groovy
+      - sonar_analysis:
+          requires:
+            - install_docker_trivy
       - build:
           requires:
-            - load_scripts
+            - sonar_analysis
       - test:
           requires:
             - build
-      - sonar_analysis:
-          requires:
-            - test
       - docker_build:
           requires:
-            - sonar_analysis
+            - test
       - docker_scan:
           requires:
             - docker_build
