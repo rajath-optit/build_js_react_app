@@ -52,6 +52,14 @@ jobs:
             curl -s "https://get.sdkman.io" | bash
             source "$HOME/.sdkman/bin/sdkman-init.sh"
             sdk install groovy 3.0.9
+            # Set up environment variables for Groovy
+            echo 'export GROOVY_HOME="$HOME/.sdkman/candidates/groovy/current"' >> $BASH_ENV
+            echo 'export PATH="$GROOVY_HOME/bin:$PATH"' >> $BASH_ENV
+      - run:
+          name: Load Environment Variables
+          command: |
+            source $BASH_ENV
+            groovy --version
       - run:
           name: Load and Execute Groovy Scripts
           command: |
@@ -106,4 +114,9 @@ workflows:
       - setup:
           GIT_SOURCE_CODE_URL: "https://github.com/bharathkoptit/build_js_react_app.git"
           SOURCE_CODE_BRANCH_NAME: "master"
-      
+      - build:
+          requires:
+            - setup
+          DOCKER_REPO: "bharathoptdocker"
+          DOCKER_IMAGE_NAME: "optit-lab-service"
+          DOCKER_IMAGE_TAG: "latest"
