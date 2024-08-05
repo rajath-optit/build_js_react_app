@@ -40,12 +40,24 @@ jobs:
           command: |
             git clone << parameters.GIT_SOURCE_CODE_URL >> ~/project
             cd ~/project
-            git checkout << parameters.SOURCE_CODE_BRANCH_NAME >>
+            if git show-ref --verify --quiet refs/heads/<< parameters.SOURCE_CODE_BRANCH_NAME >>; then
+              git checkout << parameters.SOURCE_CODE_BRANCH_NAME >>
+            else
+              echo "Branch '<< parameters.SOURCE_CODE_BRANCH_NAME >>' not found. Available branches:"
+              git branch -r
+              exit 1
+            fi
+
+      - run:
+          name: Update APT Sources
+          command: |
+            sudo sed -i 's|http://deb.debian.org/debian|http://archive.debian.org/debian|g' /etc/apt/sources.list
+            sudo sed -i 's|http://security.debian.org/debian-security|http://archive.debian.org/debian-security|g' /etc/apt/sources.list
+            sudo apt-get update
 
       - run:
           name: Install Dependencies
           command: |
-            sudo apt-get update
             sudo apt-get install -y groovy
 
       - run:
