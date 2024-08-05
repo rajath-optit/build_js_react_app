@@ -3,8 +3,7 @@ version: 2.1
 executors:
   java-node-docker-executor:
     docker:
-      - image: circleci/openjdk:11-jdk
-      - image: circleci/node:14
+      - image: circleci/python:3.9  # This image has curl and apt-get
     working_directory: ~/repo
     environment:
       # Set environment variables if needed
@@ -20,7 +19,8 @@ jobs:
           name: Install Basic Utilities
           command: |
             echo "Installing basic utilities..."
-            apt-get update && apt-get install -y curl bash unzip
+            sudo apt-get update
+            sudo apt-get install -y curl bash unzip
             # Verify installations
             curl --version
             bash --version
@@ -28,8 +28,8 @@ jobs:
           name: Install Node.js
           command: |
             echo "Installing Node.js..."
-            curl -sL https://deb.nodesource.com/setup_14.x | bash -
-            apt-get install -y nodejs
+            curl -sL https://deb.nodesource.com/setup_14.x | sudo bash -
+            sudo apt-get install -y nodejs
             # Verify Node.js installation
             node --version
             npm --version
