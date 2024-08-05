@@ -86,6 +86,37 @@ jobs:
               echo "Groovy is already installed"
             fi
 
+      - run:
+          name: Load and Execute Groovy Scripts
+          command: |
+            cd ~/project
+            # Define baseDir for the project
+            baseDir="${PWD}/Jenkins/shared-libraries"
+            
+            # Function to load and execute a Groovy script
+            loadAndExecuteGroovyScript() {
+              type=$1
+              technology=$2
+              scriptName=$3
+              scriptPath="${baseDir}/${type}/${technology}/${scriptName}.groovy"
+              if [ -f ${scriptPath} ]; then
+                echo "Executing ${scriptPath}"
+                groovy ${scriptPath}
+              else
+                echo "Script ${scriptPath} not found!"
+                exit 1
+              fi
+            }
+            
+            # Load and execute required scripts
+            loadAndExecuteGroovyScript "vars/common/scm-util" "git" "GitCheckout"
+            loadAndExecuteGroovyScript "vars/common" "codeAnalysis" "PerformSonarAnalysisForReactjs"
+            loadAndExecuteGroovyScript "vars/common" "dockerUtil" "DockerUtil"
+            loadAndExecuteGroovyScript "vars/common" "containerPublish" "DockerHubPublish"
+            loadAndExecuteGroovyScript "vars/common" "dockerUtil" "DockerScan"
+            loadAndExecuteGroovyScript "src/org/common" "build" "BuildWithNpm"
+            loadAndExecuteGroovyScript "src/org/common" "unitTest" "UnitTestWithNpm"
+
 workflows:
   version: 2
   setup_and_load:
