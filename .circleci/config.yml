@@ -44,7 +44,7 @@ jobs:
             ls -R
 
             # Directly use the baseDir provided
-            baseDir="${BASE_DIR}"
+            baseDir="${CIRCLE_JOB_PARAMETERS_BASEDIR:-Jenkins/shared-libraries}"
             echo "Base directory: ${baseDir}"
             
             # Debugging: List contents of base directory
