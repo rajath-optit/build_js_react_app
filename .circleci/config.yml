@@ -1,58 +1,110 @@
 version: 2.1
 
 executors:
-  docker-executor:
+  java-node-docker-executor:
     docker:
-      - image: circleci/node:16
+      - image: circleci/openjdk:11-jdk
+    environment:
+      JAVA_HOME: /usr/local/openjdk-11
+      GROOVY_HOME: /usr/local/groovy
+      PATH: /usr/local/groovy/bin:/usr/local/openjdk-11/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    working_directory: /home/circleci/project
 
 jobs:
-  print_parameters:
-    executor: docker-executor
-    parameters:
-      git_source_code_url:
-        type: string
-        default: 'https://github.com/example/repo'
-      source_code_branch_name:
-        type: string
-        default: 'main'
-      docker_repo:
-        type: string
-        default: 'my-docker-repo'
-      docker_image_name:
-        type: string
-        default: 'myapp'
-      docker_image_tag:
-        type: string
-        default: 'latest'
-      sonar_project_key:
-        type: string
-        default: 'sonar-project'
-      sonar_organization:
-        type: string
-        default: 'sonar-org'
-      sonar_sources_dir:
-        type: string
-        default: 'src'
-      sonar_token:
-        type: string
-        default: 'sonar-token'
-
+  install_dependencies:
+    executor: java-node-docker-executor
     steps:
+      - checkout
       - run:
-          name: Print Parameters
+          name: Install Node.js and npm
           command: |
-            echo "Git Source Code URL: << parameters.git_source_code_url >>"
-            echo "Source Code Branch Name: << parameters.source_code_branch_name >>"
-            echo "Docker Repo: << parameters.docker_repo >>"
-            echo "Docker Image Name: << parameters.docker_image_name >>"
-            echo "Docker Image Tag: << parameters.docker_image_tag >>"
-            echo "Sonar Project Key: << parameters.sonar_project_key >>"
-            echo "Sonar Organization: << parameters.sonar_organization >>"
-            echo "Sonar Sources Directory: << parameters.sonar_sources_dir >>"
-            echo "Sonar Token: << parameters.sonar_token >>"
+            curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash -
+            sudo apt-get install -y nodejs
+            node --version
+            npm --version
+      - run:
+          name: Install Groovy
+          command: |
+            wget https://archive.apache.org/dist/groovy/4.0.11/distribution/apache-groovy-sdk-4.0.11.zip
+            unzip apache-groovy-sdk-4.0.11.zip
+            sudo mv groovy-4.0.11 /usr/local/groovy
+            export PATH=$PATH:/usr/local/groovy/bin
+            groovy --version
+      - run:
+          name: Install SonarQube Scanner
+          command: |
+            wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.2.2472-linux.zip
+            unzip sonar-scanner-cli-4.6.2.2472-linux.zip
+            sudo mv sonar-scanner-4.6.2.2472-linux /usr/local/sonar-scanner
+            export PATH=$PATH:/usr/local/sonar-scanner/bin
+            sonar-scanner --version
+      - run:
+          name: Install Docker
+          command: |
+            curl -fsSL https://get.docker.com -o get-docker.sh
+            sh get-docker.sh
+            sudo usermod -aG docker $USER
+            docker --version
+
+  load_scripts:
+    executor: java-node-docker-executor
+    steps:
+      - checkout
+      - run:
+          name: Load Scripts
+          command: |
+            export PATH=$PATH:/usr/local/groovy/bin
+
+            # Debugging: Show current working directory
+            echo "Current working directory: $(pwd)"
+
+            # Debugging: List contents of current working directory
+            echo "Contents of current working directory:"
+            ls -R
+
+            # Directly use the baseDir provided
+            baseDir="${CIRCLE_WORKING_DIRECTORY}/Jenkins/shared-libraries"
+            echo "Base directory: ${baseDir}"
+            
+            # Debugging: List contents of base directory
+            echo "Contents of base directory:"
+            ls -R "${baseDir}" || echo "Base directory does not exist"
+
+            loadScript() {
+              type=$1
+              technology=$2
+              scriptName=$3
+              scriptPath="${baseDir}/${type}/${technology}/${scriptName}.groovy"
+              echo "Loading script: ${scriptPath}"  # Debugging line
+              if [ -f "${scriptPath}" ]; then
+                cat "${scriptPath}"
+              else
+                echo "Script not found: ${scriptPath}"
+                exit 1
+              fi
+            }
+
+            gitCheckoutScript=$(loadScript "vars/common/scm-util" "git" "GitCheckout")
+            sonarScript=$(loadScript "vars/common" "codeAnalysis" "PerformSonarAnalysisForReactjs")
+            dockerBuildScript=$(loadScript "vars/common" "dockerUtil" "DockerUtil")
+            dockerPublishScript=$(loadScript "vars/common" "containerPublish" "DockerHubPublish")
+            dockerScanScript=$(loadScript "vars/common" "dockerUtil" "DockerScan")
+            buildWithNpmScript=$(loadScript "src/org/common" "build" "BuildWithNpm")
+            unitTestWithNpmScript=$(loadScript "src/org/common" "unitTest" "UnitTestWithNpm")
+
+            echo "${gitCheckoutScript}" > gitCheckoutScript.groovy
+            echo "${sonarScript}" > sonarScript.groovy
+            echo "${dockerBuildScript}" > dockerBuildScript.groovy
+            echo "${dockerPublishScript}" > dockerPublishScript.groovy
+            echo "${dockerScanScript}" > dockerScanScript.groovy
+            echo "${buildWithNpmScript}" > buildWithNpmScript.groovy
+            echo "${unitTestWithNpmScript}" > unitTestWithNpmScript.groovy
 
 workflows:
   version: 2
-  print_parameters_workflow:
+  build_and_deploy:
     jobs:
-      - print_parameters
+      - install_dependencies
+      - load_scripts:
+          requires:
+            - install_dependencies
