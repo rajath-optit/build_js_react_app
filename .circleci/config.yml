@@ -22,10 +22,11 @@ jobs:
       - run:
           name: Checkout Source Code Repo
           command: |
-            git clone -b $SOURCE_CODE_BRANCH_NAME $GIT_SOURCE_CODE_URL source-code
-            ls -al  # List directory contents for debugging
+            git clone -b $SOURCE_CODE_BRANCH_NAME $GIT_SOURCE_CODE_URL source-code || { echo 'Git clone failed'; exit 1; }
+            ls -al  # List directory contents at this point
             cd source-code
-            git checkout $SOURCE_CODE_BRANCH_NAME
+            ls -al  # List contents of source-code directory
+            git checkout $SOURCE_CODE_BRANCH_NAME || { echo 'Git checkout failed'; exit 1; }
             ls -al  # List contents to confirm directory structure
 
   build:
@@ -34,7 +35,7 @@ jobs:
       - run:
           name: Build with npm
           command: |
-            cd source-code
+            cd source-code || { echo 'Directory source-code not found'; exit 1; }
             npm install
             npm run build
 
@@ -44,7 +45,7 @@ jobs:
       - run:
           name: Unit Test
           command: |
-            cd source-code
+            cd source-code || { echo 'Directory source-code not found'; exit 1; }
             npm test
 
   sonar_analysis:
@@ -53,7 +54,7 @@ jobs:
       - run:
           name: SonarQube Analysis
           command: |
-            cd source-code
+            cd source-code || { echo 'Directory source-code not found'; exit 1; }
             # Add your SonarQube analysis command here
 
   docker_build:
@@ -62,7 +63,7 @@ jobs:
       - run:
           name: Docker Build
           command: |
-            cd source-code
+            cd source-code || { echo 'Directory source-code not found'; exit 1; }
             docker build -t $DOCKER_IMAGE_NAME:$DOCKER_IMAGE_TAG .
 
   docker_scan:
