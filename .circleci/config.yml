@@ -1,97 +1,58 @@
 version: 2.1
 
 executors:
-  default:
+  docker-executor:
     docker:
-      - image: circleci/python:3.8  # Adjust as needed
+      - image: circleci/node:16
 
 jobs:
-  checkout:
-    executor: default
-    steps:
-      - checkout
-      - run:
-          name: Load Scripts
-          command: |
-            mkdir -p $HOME/shared-libraries
-            cp -r Jenkins/shared-libraries/* $HOME/shared-libraries/
+  print_parameters:
+    executor: docker-executor
+    parameters:
+      git_source_code_url:
+        type: string
+        default: 'https://github.com/example/repo'
+      source_code_branch_name:
+        type: string
+        default: 'main'
+      docker_repo:
+        type: string
+        default: 'my-docker-repo'
+      docker_image_name:
+        type: string
+        default: 'myapp'
+      docker_image_tag:
+        type: string
+        default: 'latest'
+      sonar_project_key:
+        type: string
+        default: 'sonar-project'
+      sonar_organization:
+        type: string
+        default: 'sonar-org'
+      sonar_sources_dir:
+        type: string
+        default: 'src'
+      sonar_token:
+        type: string
+        default: 'sonar-token'
 
-  git_checkout:
-    executor: default
     steps:
       - run:
-          name: Checkout Source Code Repo
+          name: Print Parameters
           command: |
-            git clone -b $SOURCE_CODE_BRANCH_NAME $GIT_SOURCE_CODE_URL source-code || { echo 'Git clone failed'; exit 1; }
-            ls -al  # List directory contents at this point
-            cd source-code
-            ls -al  # List contents of source-code directory
-            git checkout $SOURCE_CODE_BRANCH_NAME || { echo 'Git checkout failed'; exit 1; }
-            ls -al  # List contents to confirm directory structure
-
-  build:
-    executor: default
-    steps:
-      - run:
-          name: Build with npm
-          command: |
-            cd source-code || { echo 'Directory source-code not found'; exit 1; }
-            npm install
-            npm run build
-
-  unit_test:
-    executor: default
-    steps:
-      - run:
-          name: Unit Test
-          command: |
-            cd source-code || { echo 'Directory source-code not found'; exit 1; }
-            npm test
-
-  sonar_analysis:
-    executor: default
-    steps:
-      - run:
-          name: SonarQube Analysis
-          command: |
-            cd source-code || { echo 'Directory source-code not found'; exit 1; }
-            # Add your SonarQube analysis command here
-
-  docker_build:
-    executor: default
-    steps:
-      - run:
-          name: Docker Build
-          command: |
-            cd source-code || { echo 'Directory source-code not found'; exit 1; }
-            docker build -t $DOCKER_IMAGE_NAME:$DOCKER_IMAGE_TAG .
-
-  docker_scan:
-    executor: default
-    steps:
-      - run:
-          name: Docker Scan
-          command: |
-            # Add your Docker scan command here
-
-  docker_publish:
-    executor: default
-    steps:
-      - run:
-          name: Docker Publish
-          command: |
-            echo "$DOCKER_CREDENTIAL" | docker login -u $DOCKER_USER --password-stdin
-            docker push $DOCKER_REPO/$DOCKER_IMAGE_NAME:$DOCKER_IMAGE_TAG
+            echo "Git Source Code URL: << parameters.git_source_code_url >>"
+            echo "Source Code Branch Name: << parameters.source_code_branch_name >>"
+            echo "Docker Repo: << parameters.docker_repo >>"
+            echo "Docker Image Name: << parameters.docker_image_name >>"
+            echo "Docker Image Tag: << parameters.docker_image_tag >>"
+            echo "Sonar Project Key: << parameters.sonar_project_key >>"
+            echo "Sonar Organization: << parameters.sonar_organization >>"
+            echo "Sonar Sources Directory: << parameters.sonar_sources_dir >>"
+            echo "Sonar Token: << parameters.sonar_token >>"
 
 workflows:
   version: 2
-  build_and_test:
+  print_parameters_workflow:
     jobs:
-      - checkout
-      - git_checkout
-      - build
-      - unit_test
-      - sonar_analysis
-      - docker_build
-      - docker_scan
-      - docker_publish
+      - print_parameters
