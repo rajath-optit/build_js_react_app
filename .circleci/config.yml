@@ -53,11 +53,19 @@ jobs:
             fi
 
       - run:
-          name: Debug Groovy Installation
+          name: Install Groovy
           command: |
-            which groovy
-            ls -l /opt/groovy
-            ls -l /usr/local/bin/groovy
+            if ! command -v groovy &> /dev/null; then
+              sudo apt-get update
+              sudo apt-get install -y wget openjdk-11-jdk unzip
+              wget https://downloads.apache.org/groovy/{latest-version}/distributions/groovy-sdk-{latest-version}.zip
+              unzip groovy-sdk-{latest-version}.zip
+              sudo mv groovy-{latest-version} /opt/groovy
+              sudo ln -s /opt/groovy/bin/groovy /usr/local/bin/groovy
+            else
+              echo "Groovy is already installed"
+           fi
+
 
       - run:
           name: Prepare Directory
