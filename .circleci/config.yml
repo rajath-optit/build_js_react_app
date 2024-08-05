@@ -28,9 +28,10 @@ jobs:
     parameters:
       baseDir:
         type: string
-        default: "Jenkins/shared-libraries"
+        default: "build_js_react_app/Jenkins/shared-libraries"
     executor: java-executor
     steps:
+      - checkout  # Ensure the repository is checked out
       - run:
           name: Load Scripts
           command: |
@@ -44,7 +45,7 @@ jobs:
             ls -R
 
             # Directly use the baseDir provided
-            baseDir="${CIRCLE_JOB_PARAMETERS_BASEDIR:-Jenkins/shared-libraries}"
+            baseDir="${CIRCLE_JOB_PARAMETERS_BASEDIR:-build_js_react_app/Jenkins/shared-libraries}"
             echo "Base directory: ${baseDir}"
             
             # Debugging: List contents of base directory
@@ -158,7 +159,7 @@ workflows:
     jobs:
       - install_groovy
       - load_scripts:
-          baseDir: "Jenkins/shared-libraries"
+          baseDir: "build_js_react_app/Jenkins/shared-libraries"
           requires:
             - install_groovy
       - install_dependencies:
