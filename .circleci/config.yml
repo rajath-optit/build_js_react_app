@@ -47,6 +47,14 @@ jobs:
             cd ~/project
             npm install
       - run:
+          name: Install Groovy
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y wget unzip
+            wget https://downloads.apache.org/groovy/3.0.9/distributions/groovy-sdk-3.0.9.zip
+            unzip groovy-sdk-3.0.9.zip -d /usr/local
+            sudo ln -s /usr/local/groovy-3.0.9/bin/groovy /usr/bin/groovy
+      - run:
           name: Load and Execute Groovy Scripts
           command: |
             cd ~/project
