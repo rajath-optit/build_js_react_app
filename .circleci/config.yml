@@ -47,13 +47,11 @@ jobs:
             cd ~/project
             npm install
       - run:
-          name: Install Groovy
+          name: Install SDKMAN and Groovy
           command: |
-            sudo apt-get update
-            sudo apt-get install -y wget unzip
-            wget https://dl.bintray.com/groovy/maven/groovy-sdk-3.0.9.zip || { echo "Failed to download Groovy"; exit 1; }
-            unzip groovy-sdk-3.0.9.zip -d /usr/local
-            sudo ln -s /usr/local/groovy-3.0.9/bin/groovy /usr/bin/groovy
+            curl -s "https://get.sdkman.io" | bash
+            source "$HOME/.sdkman/bin/sdkman-init.sh"
+            sdk install groovy 3.0.9
       - run:
           name: Load and Execute Groovy Scripts
           command: |
@@ -108,9 +106,4 @@ workflows:
       - setup:
           GIT_SOURCE_CODE_URL: "https://github.com/bharathkoptit/build_js_react_app.git"
           SOURCE_CODE_BRANCH_NAME: "master"
-      - build:
-          requires:
-            - setup
-          DOCKER_REPO: "bharathoptdocker"
-          DOCKER_IMAGE_NAME: "optit-lab-service"
-          DOCKER_IMAGE_TAG: "latest"
+      
