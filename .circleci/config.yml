@@ -17,10 +17,22 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Install Dependencies
+          name: Install Basic Utilities
           command: |
-            echo "Installing dependencies..."
-            # Install necessary packages, e.g., for Node.js, Java, etc.
+            echo "Installing basic utilities..."
+            apt-get update && apt-get install -y curl bash unzip
+            # Verify installations
+            curl --version
+            bash --version
+      - run:
+          name: Install Node.js
+          command: |
+            echo "Installing Node.js..."
+            curl -sL https://deb.nodesource.com/setup_14.x | bash -
+            apt-get install -y nodejs
+            # Verify Node.js installation
+            node --version
+            npm --version
 
   install_groovy:
     executor: java-node-docker-executor
