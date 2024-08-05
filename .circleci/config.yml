@@ -1,52 +1,32 @@
 version: 2.1
+
 executors:
   node-executor:
     docker:
-      - image: 'circleci/node:16'
+      - image: circleci/node:16  # Update Node.js version as needed
+
 jobs:
   setup:
     executor: node-executor
+
     parameters:
       GIT_SOURCE_CODE_URL:
         type: string
-        default: 'https://github.com/bharathkoptit/build_js_react_app.git'
+        default: "https://github.com/bharathkoptit/build_js_react_app.git"
       SOURCE_CODE_BRANCH_NAME:
         type: string
-        default: master
-      GIT_SOURCE_CODE_CREDENTIAL:
-        type: string
-      DOCKER_REPO:
-        type: string
-      DOCKER_IMAGE_NAME:
-        type: string
-      DOCKER_IMAGE_TAG:
-        type: string
-      DOCKER_CREDENTIAL:
-        type: string
-      SONAR_PROJECT_KEY:
-        type: string
-      SONAR_ORGANIZATION:
-        type: string
-      SONAR_SOURCES_DIR:
-        type: string
-      SONAR_TOKEN:
-        type: string
+        default: "master"
+
     steps:
       - checkout:
           path: ~/project
+
       - run:
-          name: Install Groovy
+          name: Print Parameters
           command: |
-            if ! command -v groovy &> /dev/null; then
-              sudo apt-get update
-              sudo apt-get install -y wget openjdk-11-jdk unzip
-              wget https://downloads.apache.org/groovy/3.0.9/distributions/groovy-sdk-3.0.9.zip
-              unzip groovy-sdk-3.0.9.zip
-              sudo mv groovy-3.0.9 /opt/groovy
-              sudo ln -s /opt/groovy/bin/groovy /usr/local/bin/groovy
-            else
-              echo "Groovy is already installed"
-            fi
+            echo "GIT_SOURCE_CODE_URL: << parameters.GIT_SOURCE_CODE_URL >>"
+            echo "SOURCE_CODE_BRANCH_NAME: << parameters.SOURCE_CODE_BRANCH_NAME >>"
+
       - run:
           name: Prepare Directory
           command: |
@@ -54,26 +34,26 @@ jobs:
               rm -rf ~/project
             fi
             mkdir -p ~/project
+
       - run:
           name: Checkout Repository
-          command: >
-            git clone ${CIRCLE_JOB_GIT_SOURCE_CODE_URL} ~/project
-
+          command: |
+            git clone << parameters.GIT_SOURCE_CODE_URL >> ~/project
             cd ~/project
-
-            if git show-ref --verify --quiet
-            refs/heads/${CIRCLE_JOB_SOURCE_CODE_BRANCH_NAME}; then
-              git checkout ${CIRCLE_JOB_SOURCE_CODE_BRANCH_NAME}
+            if git show-ref --verify --quiet refs/heads/<< parameters.SOURCE_CODE_BRANCH_NAME >>; then
+              git checkout << parameters.SOURCE_CODE_BRANCH_NAME >>
             else
-              echo "Branch '${CIRCLE_JOB_SOURCE_CODE_BRANCH_NAME}' not found. Available branches:"
+              echo "Branch '<< parameters.SOURCE_CODE_BRANCH_NAME >>' not found. Available branches:"
               git branch -r
               exit 1
             fi
+
       - run:
           name: Install Node.js Dependencies
           command: |
             cd ~/project
             npm install
+
       - run:
           name: Check Docker Installation
           command: |
@@ -95,12 +75,25 @@ jobs:
             else
               echo "Docker is already installed"
             fi
+
+      - run:
+          name: Check Groovy Installation
+          command: |
+            if ! command -v groovy &> /dev/null; then
+              sudo apt-get update
+              sudo apt-get install -y groovy
+            else
+              echo "Groovy is already installed"
+            fi
+
       - run:
           name: Load and Execute Groovy Scripts
           command: |
             cd ~/project
+            # Define baseDir for the project
             baseDir="${PWD}/Jenkins/shared-libraries"
-
+            
+            # Function to load and execute a Groovy script
             loadAndExecuteGroovyScript() {
               type=$1
               technology=$2
@@ -114,18 +107,23 @@ jobs:
                 exit 1
               fi
             }
-
+            
             # Load and execute required scripts
+            loadAndExecuteGroovyScript "vars/common/scm-util" "git" "GitCheckout"
+            loadAndExecuteGroovyScript "vars/common" "codeAnalysis" "PerformSonarAnalysisForReactjs"
+            loadAndExecuteGroovyScript "vars/common" "dockerUtil" "DockerUtil"
+            loadAndExecuteGroovyScript "vars/common" "containerPublish" "DockerHubPublish"
+            loadAndExecuteGroovyScript "vars/common" "dockerUtil" "DockerScan"
             loadAndExecuteGroovyScript "src/org/common" "build" "BuildWithNpm"
-            # Add additional script executions as needed
+            loadAndExecuteGroovyScript "src/org/common" "unitTest" "UnitTestWithNpm"
+
   build:
     executor: node-executor
+
     parameters:
       GIT_SOURCE_CODE_URL:
         type: string
       SOURCE_CODE_BRANCH_NAME:
-        type: string
-      GIT_SOURCE_CODE_CREDENTIAL:
         type: string
       DOCKER_REPO:
         type: string
@@ -133,86 +131,38 @@ jobs:
         type: string
       DOCKER_IMAGE_TAG:
         type: string
-      DOCKER_CREDENTIAL:
-        type: string
-      SONAR_PROJECT_KEY:
-        type: string
-      SONAR_ORGANIZATION:
-        type: string
-      SONAR_SOURCES_DIR:
-        type: string
-      SONAR_TOKEN:
-        type: string
+
     steps:
       - checkout:
           path: ~/project
+
       - run:
           name: Print Parameters
-          command: >
-            echo "GIT_SOURCE_CODE_URL: ${CIRCLE_JOB_GIT_SOURCE_CODE_URL}"
+          command: |
+            echo "GIT_SOURCE_CODE_URL: << parameters.GIT_SOURCE_CODE_URL >>"
+            echo "SOURCE_CODE_BRANCH_NAME: << parameters.SOURCE_CODE_BRANCH_NAME >>"
+            echo "DOCKER_REPO: << parameters.DOCKER_REPO >>"
+            echo "DOCKER_IMAGE_NAME: << parameters.DOCKER_IMAGE_NAME >>"
+            echo "DOCKER_IMAGE_TAG: << parameters.DOCKER_IMAGE_TAG >>"
 
-            echo "SOURCE_CODE_BRANCH_NAME:
-            ${CIRCLE_JOB_SOURCE_CODE_BRANCH_NAME}"
-
-            echo "DOCKER_REPO: ${CIRCLE_JOB_DOCKER_REPO}"
-
-            echo "DOCKER_IMAGE_NAME: ${CIRCLE_JOB_DOCKER_IMAGE_NAME}"
-
-            echo "DOCKER_IMAGE_TAG: ${CIRCLE_JOB_DOCKER_IMAGE_TAG}"
-
-            echo "SONAR_PROJECT_KEY: ${CIRCLE_JOB_SONAR_PROJECT_KEY}"
-
-            echo "SONAR_ORGANIZATION: ${CIRCLE_JOB_SONAR_ORGANIZATION}"
-
-            echo "SONAR_SOURCES_DIR: ${CIRCLE_JOB_SONAR_SOURCES_DIR}"
       - run:
-          name: Load and Execute Build Groovy Script
+          name: Build Docker Image
           command: |
             cd ~/project
-            baseDir="${PWD}/Jenkins/shared-libraries"
+            docker build -t << parameters.DOCKER_REPO >>/<< parameters.DOCKER_IMAGE_NAME >>:<< parameters.DOCKER_IMAGE_TAG >> .
 
-            loadAndExecuteGroovyScript() {
-              type=$1
-              technology=$2
-              scriptName=$3
-              scriptPath="${baseDir}/${type}/${technology}/${scriptName}.groovy"
-              if [ -f ${scriptPath} ]; then
-                echo "Executing ${scriptPath}"
-                groovy ${scriptPath}
-              else
-                echo "Script ${scriptPath} not found!"
-                exit 1
-              fi
-            }
-
-            loadAndExecuteGroovyScript "src/org/common" "build" "BuildWithNpm"
 workflows:
   version: 2
   setup_and_build:
     jobs:
       - setup:
-          GIT_SOURCE_CODE_URL: 'https://github.com/bharathkoptit/build_js_react_app.git'
-          SOURCE_CODE_BRANCH_NAME: master
-          GIT_SOURCE_CODE_CREDENTIAL: bharathkoptit/******
-          DOCKER_REPO: bharathoptdocker
-          DOCKER_IMAGE_NAME: optit-lab-service
-          DOCKER_IMAGE_TAG: latest
-          DOCKER_CREDENTIAL: bharathoptdocker/******
-          SONAR_PROJECT_KEY: myreactorg_myreactorg
-          SONAR_ORGANIZATION: myreactorg
-          SONAR_SOURCES_DIR: .
-          SONAR_TOKEN: your-sonar-token
+          GIT_SOURCE_CODE_URL: "https://github.com/bharathkoptit/build_js_react_app.git"
+          SOURCE_CODE_BRANCH_NAME: "master"
       - build:
           requires:
             - setup
-          GIT_SOURCE_CODE_URL: 'https://github.com/bharathkoptit/build_js_react_app.git'
-          SOURCE_CODE_BRANCH_NAME: master
-          GIT_SOURCE_CODE_CREDENTIAL: bharathkoptit/******
-          DOCKER_REPO: bharathoptdocker
-          DOCKER_IMAGE_NAME: optit-lab-service
-          DOCKER_IMAGE_TAG: latest
-          DOCKER_CREDENTIAL: bharathoptdocker/******
-          SONAR_PROJECT_KEY: myreactorg_myreactorg
-          SONAR_ORGANIZATION: myreactorg
-          SONAR_SOURCES_DIR: .
-          SONAR_TOKEN: your-sonar-token
+          GIT_SOURCE_CODE_URL: "https://github.com/bharathkoptit/build_js_react_app.git"
+          SOURCE_CODE_BRANCH_NAME: "master"
+          DOCKER_REPO: "bharathoptdocker"
+          DOCKER_IMAGE_NAME: "optit-lab-service"
+          DOCKER_IMAGE_TAG: "latest"
