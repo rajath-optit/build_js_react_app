@@ -8,7 +8,6 @@ executors:
 jobs:
   setup:
     executor: node-executor
-
     parameters:
       GIT_SOURCE_CODE_URL:
         type: string
@@ -16,7 +15,7 @@ jobs:
       SOURCE_CODE_BRANCH_NAME:
         type: string
         default: "master"
-
+      # Add other parameters here if needed
     steps:
       - checkout:
           path: ~/project
@@ -86,8 +85,14 @@ jobs:
               echo "Groovy is already installed"
             fi
 
+  build:
+    executor: node-executor
+    steps:
+      - checkout:
+          path: ~/project
+
       - run:
-          name: Load and Execute Groovy Scripts
+          name: Load and Execute Build Script
           command: |
             cd ~/project
             # Define baseDir for the project
@@ -108,19 +113,159 @@ jobs:
               fi
             }
             
-            # Load and execute required scripts
-            loadAndExecuteGroovyScript "vars/common/scm-util" "git" "GitCheckout"
-            loadAndExecuteGroovyScript "vars/common" "codeAnalysis" "PerformSonarAnalysisForReactjs"
-            loadAndExecuteGroovyScript "vars/common" "dockerUtil" "DockerUtil"
-            loadAndExecuteGroovyScript "vars/common" "containerPublish" "DockerHubPublish"
-            loadAndExecuteGroovyScript "vars/common" "dockerUtil" "DockerScan"
+            # Load and execute build script
             loadAndExecuteGroovyScript "src/org/common" "build" "BuildWithNpm"
+
+  unit_test:
+    executor: node-executor
+    steps:
+      - checkout:
+          path: ~/project
+
+      - run:
+          name: Load and Execute Unit Test Script
+          command: |
+            cd ~/project
+            baseDir="${PWD}/Jenkins/shared-libraries"
+            loadAndExecuteGroovyScript() {
+              type=$1
+              technology=$2
+              scriptName=$3
+              scriptPath="${baseDir}/${type}/${technology}/${scriptName}.groovy"
+              if [ -f ${scriptPath} ]; then
+                echo "Executing ${scriptPath}"
+                groovy ${scriptPath}
+              else
+                echo "Script ${scriptPath} not found!"
+                exit 1
+              fi
+            }
             loadAndExecuteGroovyScript "src/org/common" "unitTest" "UnitTestWithNpm"
+
+  sonar_analysis:
+    executor: node-executor
+    steps:
+      - checkout:
+          path: ~/project
+
+      - run:
+          name: Load and Execute SonarQube Script
+          command: |
+            cd ~/project
+            baseDir="${PWD}/Jenkins/shared-libraries"
+            loadAndExecuteGroovyScript() {
+              type=$1
+              technology=$2
+              scriptName=$3
+              scriptPath="${baseDir}/${type}/${technology}/${scriptName}.groovy"
+              if [ -f ${scriptPath} ]; then
+                echo "Executing ${scriptPath}"
+                groovy ${scriptPath}
+              else
+                echo "Script ${scriptPath} not found!"
+                exit 1
+              fi
+            }
+            loadAndExecuteGroovyScript "vars/common" "codeAnalysis" "PerformSonarAnalysisForReactjs"
+
+  docker_build:
+    executor: node-executor
+    steps:
+      - checkout:
+          path: ~/project
+
+      - run:
+          name: Load and Execute Docker Build Script
+          command: |
+            cd ~/project
+            baseDir="${PWD}/Jenkins/shared-libraries"
+            loadAndExecuteGroovyScript() {
+              type=$1
+              technology=$2
+              scriptName=$3
+              scriptPath="${baseDir}/${type}/${technology}/${scriptName}.groovy"
+              if [ -f ${scriptPath} ]; then
+                echo "Executing ${scriptPath}"
+                groovy ${scriptPath}
+              else
+                echo "Script ${scriptPath} not found!"
+                exit 1
+              fi
+            }
+            loadAndExecuteGroovyScript "vars/common" "dockerUtil" "DockerUtil"
+
+  docker_scan:
+    executor: node-executor
+    steps:
+      - checkout:
+          path: ~/project
+
+      - run:
+          name: Load and Execute Docker Scan Script
+          command: |
+            cd ~/project
+            baseDir="${PWD}/Jenkins/shared-libraries"
+            loadAndExecuteGroovyScript() {
+              type=$1
+              technology=$2
+              scriptName=$3
+              scriptPath="${baseDir}/${type}/${technology}/${scriptName}.groovy"
+              if [ -f ${scriptPath} ]; then
+                echo "Executing ${scriptPath}"
+                groovy ${scriptPath}
+              else
+                echo "Script ${scriptPath} not found!"
+                exit 1
+              fi
+            }
+            loadAndExecuteGroovyScript "vars/common" "dockerUtil" "DockerScan"
+
+  docker_publish:
+    executor: node-executor
+    steps:
+      - checkout:
+          path: ~/project
+
+      - run:
+          name: Load and Execute Docker Publish Script
+          command: |
+            cd ~/project
+            baseDir="${PWD}/Jenkins/shared-libraries"
+            loadAndExecuteGroovyScript() {
+              type=$1
+              technology=$2
+              scriptName=$3
+              scriptPath="${baseDir}/${type}/${technology}/${scriptName}.groovy"
+              if [ -f ${scriptPath} ]; then
+                echo "Executing ${scriptPath}"
+                groovy ${scriptPath}
+              else
+                echo "Script ${scriptPath} not found!"
+                exit 1
+              fi
+            }
+            loadAndExecuteGroovyScript "vars/common" "containerPublish" "DockerHubPublish"
 
 workflows:
   version: 2
   setup_and_load:
     jobs:
-      - setup:
-          GIT_SOURCE_CODE_URL: "https://github.com/bharathkoptit/build_js_react_app.git"
-          SOURCE_CODE_BRANCH_NAME: "master"
+      - setup
+      - build:
+          requires:
+            - setup
+      - unit_test:
+          requires:
+            - build
+      - sonar_analysis:
+          requires:
+            - unit_test
+      - docker_build:
+          requires:
+            - sonar_analysis
+      - docker_scan:
+          requires:
+            - docker_build
+      - docker_publish:
+          requires:
+            - docker_scan
