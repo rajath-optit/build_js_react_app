@@ -1,212 +1,34 @@
-version: 2.1
-
-executors:
-  java-node-docker-executor:
-    docker:
-      - image: circleci/openjdk:11-jdk
-    environment:
-      JAVA_HOME: /usr/local/openjdk-11
-      GROOVY_HOME: /usr/local/groovy
-      PATH: /usr/local/groovy/bin:/usr/local/openjdk-11/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-    working_directory: /home/circleci/project
-
-jobs:
-  install_dependencies:
-    executor: java-node-docker-executor
-    steps:
-      - checkout
-      - run:
-          name: Install Node.js and npm
-          command: |
-            set -e
-            if ! command -v node &> /dev/null; then
-              echo "Node.js not found. Installing Node.js and npm..."
-              curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash -
-              sudo apt-get install -y nodejs
-              node --version
-              npm --version
-              echo "Node.js and npm have been installed."
-            else
-              echo "Node.js is already installed."
-              node --version
-              npm --version
-            fi
-      - run:
-          name: Verify npm PATH
-          command: |
-            echo "PATH: $PATH"
-            which npm
-            npm --version
-
-      - run:
-          name: Install Groovy
-          command: |
-            wget https://archive.apache.org/dist/groovy/4.0.11/distribution/apache-groovy-sdk-4.0.11.zip
-            unzip apache-groovy-sdk-4.0.11.zip
-            sudo mv groovy-4.0.11 /usr/local/groovy
-            export PATH=$PATH:/usr/local/groovy/bin
-            groovy --version
-
-      - run:
-          name: Install SonarQube Scanner
-          command: |
-            wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.2.2472-linux.zip
-            unzip sonar-scanner-cli-4.6.2.2472-linux.zip
-            sudo mv sonar-scanner-4.6.2.2472-linux /usr/local/sonar-scanner
-            export PATH=$PATH:/usr/local/sonar-scanner/bin
-            sonar-scanner --version
-
-      - run:
-          name: Install Docker
-          command: |
-            curl -fsSL https://get.docker.com -o get-docker.sh
-            sh get-docker.sh
-            sudo usermod -aG docker $USER
-            docker --version
-
-  load_scripts:
-    executor: java-node-docker-executor
-    steps:
-      - checkout
-      - run:
-          name: Load Scripts
-          command: |
-            export JAVA_HOME=/usr/local/openjdk-11
-            export PATH=$PATH:/usr/local/groovy/bin
-
-            # Debugging: Show current working directory
-            echo "Current working directory: $(pwd)"
-
-            # Debugging: List contents of current working directory
-            echo "Contents of current working directory:"
-            ls -R
-
-            # Directly use the baseDir provided
-            baseDir="${CIRCLE_WORKING_DIRECTORY}/Jenkins/shared-libraries"
-            echo "Base directory: ${baseDir}"
-            
-            # Debugging: List contents of base directory
-            echo "Contents of base directory:"
-            ls -R "${baseDir}" || echo "Base directory does not exist"
-
-            loadScript() {
-              type=$1
-              technology=$2
-              scriptName=$3
-              scriptPath="${baseDir}/${type}/${technology}/${scriptName}.groovy"
-              echo "Loading script: ${scriptPath}"  # Debugging line
-              if [ -f "${scriptPath}" ]; then
-                cat "${scriptPath}"
-              else
-                echo "Script not found: ${scriptPath}"
-                exit 1
-              fi
-            }
-
-            gitCheckoutScript=$(loadScript "vars/common/scm-util" "git" "GitCheckout")
-            sonarScript=$(loadScript "vars/common" "codeAnalysis" "PerformSonarAnalysisForReactjs")
-            dockerBuildScript=$(loadScript "vars/common" "dockerUtil" "DockerUtil")
-            dockerPublishScript=$(loadScript "vars/common" "containerPublish" "DockerHubPublish")
-            dockerScanScript=$(loadScript "vars/common" "dockerUtil" "DockerScan")
-            buildWithNpmScript=$(loadScript "src/org/common" "build" "BuildWithNpm")
-            unitTestWithNpmScript=$(loadScript "src/org/common" "unitTest" "UnitTestWithNpm")
-
-            echo "${gitCheckoutScript}" > gitCheckoutScript.groovy
-            echo "${sonarScript}" > sonarScript.groovy
-            echo "${dockerBuildScript}" > dockerBuildScript.groovy
-            echo "${dockerPublishScript}" > dockerPublishScript.groovy
-            echo "${dockerScanScript}" > dockerScanScript.groovy
-            echo "${buildWithNpmScript}" > buildWithNpmScript.groovy
-            echo "${unitTestWithNpmScript}" > unitTestWithNpmScript
-
-  build:
-    executor: java-node-docker-executor
-    steps:
-      - run:
-          name: Build
-          command: |
-            export JAVA_HOME=/usr/local/openjdk-11
-            echo "Running build with Groovy script..."
-            groovy buildWithNpmScript.groovy
-
-  test:
-    executor: java-node-docker-executor
-    steps:
-      - run:
-          name: Unit Test
-          command: |
-            export JAVA_HOME=/usr/local/openjdk-11
-            npm test
-
-  sonar_analysis:
-    executor: java-node-docker-executor
-    steps:
-      - run:
-          name: SonarQube Analysis
-          command: |
-            export JAVA_HOME=/usr/local/openjdk-11
-            groovy -e "${sonarScript}.performSonarCloudAnalysis('${SONAR_PROJECT_KEY}', '${SONAR_ORGANIZATION}', '${SONAR_SOURCES_DIR}', '${SONAR_TOKEN}')"
-
-  docker_build:
-    docker:
-      - image: circleci/openjdk:11-jdk
-    steps:
-      - setup_remote_docker:
-          version: 20.10.7
-      - run:
-          name: Docker Build
-          command: |
-            export JAVA_HOME=/usr/local/openjdk-11
-            groovy -e "${dockerBuildScript}.dockerBuild('${DOCKER_IMAGE_NAME}', '${DOCKER_IMAGE_TAG}')"
-
-  docker_scan:
-    docker:
-      - image: circleci/openjdk:11-jdk
-    steps:
-      - setup_remote_docker:
-          version: 20.10.7
-      - run:
-          name: Docker Scan
-          command: |
-            export JAVA_HOME=/usr/local/openjdk-11
-            groovy -e "${dockerScanScript}.dockerScan('${DOCKER_IMAGE_NAME}')"
-
-  docker_publish:
-    docker:
-      - image: circleci/openjdk:11-jdk
-    steps:
-      - setup_remote_docker:
-          version: 20.10.7
-      - run:
-          name: Docker Publish
-          command: |
-            export JAVA_HOME=/usr/local/openjdk-11
-            echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
-            groovy -e "${dockerPublishScript}.publishToContainer('${DOCKER_IMAGE_NAME}', '${DOCKER_REPO}', '${DOCKER_IMAGE_TAG}', '${DOCKER_CREDENTIAL}')"
-
-workflows:
-  version: 2
-  build_and_deploy:
-    jobs:
-      - install_dependencies
-      - load_scripts:
-          requires:
-            - install_dependencies
-      - build:
-          requires:
-            - load_scripts
-      - test:
-          requires:
-            - build
-      - sonar_analysis:
-          requires:
-            - test
-      - docker_build:
-          requires:
-            - sonar_analysis
-      - docker_scan:
-          requires:
-            - docker_build
-      - docker_publish:
-          requires:
-            - docker_scan
+install_dependencies:
+  executor: java-node-docker-executor
+  steps:
+    - checkout
+    - run:
+        name: Install Node.js and npm
+        command: |
+          curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash -
+          sudo apt-get install -y nodejs
+          node --version
+          npm --version
+    - run:
+        name: Install Groovy
+        command: |
+          wget https://archive.apache.org/dist/groovy/4.0.11/distribution/apache-groovy-sdk-4.0.11.zip
+          unzip apache-groovy-sdk-4.0.11.zip
+          sudo mv groovy-4.0.11 /usr/local/groovy
+          export PATH=$PATH:/usr/local/groovy/bin
+          groovy --version
+    - run:
+        name: Install SonarQube Scanner
+        command: |
+          wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.2.2472-linux.zip
+          unzip sonar-scanner-cli-4.6.2.2472-linux.zip
+          sudo mv sonar-scanner-4.6.2.2472-linux /usr/local/sonar-scanner
+          export PATH=$PATH:/usr/local/sonar-scanner/bin
+          sonar-scanner --version
+    - run:
+        name: Install Docker
+        command: |
+          sudo apt-get update
+          sudo apt-get install -y docker.io
+          sudo usermod -aG docker $(whoami)
+          docker --version
