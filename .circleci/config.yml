@@ -29,11 +29,20 @@ jobs:
           command: |
             sudo unzip groovy.zip -d /opt
 
+      # Verify extracted files
+      - run:
+          name: List contents of /opt
+          command: |
+            ls -l /opt
+
       # Verify the installation
       - run:
           name: Verify Groovy Installation
           command: |
-            sudo /opt/apache-groovy-binary-5.0.0-alpha-9/bin/groovy -version
+            # Find the actual path to the Groovy binary
+            groovy_bin=$(find /opt -name groovy -type f -executable)
+            echo "Groovy binary found at: $groovy_bin"
+            sudo $groovy_bin -version
 
       # Clean up
       - run:
