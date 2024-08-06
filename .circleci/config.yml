@@ -66,4 +66,17 @@ jobs:
           command: |
             docker build -t my-custom-image:latest .
 
-      # Run Docker containe
+      # Run Docker container and execute commands
+      - run:
+          name: Run Docker container
+          command: |
+            docker run --rm my-custom-image:latest bash -c "java -version && groovy -version && trivy --version && sonar-scanner --version"
+
+workflows:
+  version: 2
+  build_and_test:
+    jobs:
+      - setup_environment
+      - build_and_deploy:
+          requires:
+            - setup_environment
