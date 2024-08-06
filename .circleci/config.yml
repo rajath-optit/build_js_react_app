@@ -32,14 +32,22 @@ jobs:
           command: |
             wget https://groovy.jfrog.io/artifactory/dist-release-local/groovy-zips/apache-groovy-binary-5.0.0-alpha-9.zip -O groovy.zip
             sudo unzip groovy.zip -d /opt
-            sudo ln -s /opt/apache-groovy-binary-5.0.0-alpha-9/bin/groovy /usr/local/bin/groovy
-            groovy --version
+            sudo ln -sf /opt/groovy-5.0.0-alpha-9/bin/groovy /usr/local/bin/groovy
+            sudo chmod +x /opt/groovy-5.0.0-alpha-9/bin/groovy
 
-      # Run Groovy script to prepare for build (if needed)
+      # Set GROOVY_HOME and update PATH environment variable
       - run:
-          name: Run Groovy Script
+          name: Set GROOVY_HOME
           command: |
-            groovy path/to/your-script.groovy
+            echo 'export GROOVY_HOME=/opt/groovy-5.0.0-alpha-9' >> $BASH_ENV
+            echo 'export PATH=$GROOVY_HOME/bin:$PATH' >> $BASH_ENV
+            source $BASH_ENV
+
+      # Verify Groovy installation
+      - run:
+          name: Verify Groovy Installation
+          command: |
+            groovy --version || /opt/groovy-5.0.0-alpha-9/bin/groovy --version
 
       # Install Node.js and npm
       - run:
