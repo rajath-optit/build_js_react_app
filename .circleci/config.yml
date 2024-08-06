@@ -82,14 +82,12 @@ jobs:
           name: Load and Execute Groovy Scripts
           command: |
             cd ~/project
-            baseDir="${PWD}/pipeline"
-            
+            baseDir="${PWD}/Jenkins/shared-libraries/src/org/common/build"
+      
             # Function to load and execute a Groovy script
             loadAndExecuteGroovyScript() {
-              type=$1
-              technology=$2
-              scriptName=$3
-              scriptPath="${baseDir}/${type}/${technology}/${scriptName}.groovy"
+              scriptName=$1
+              scriptPath="${baseDir}/${scriptName}.groovy"
               echo "Looking for script at ${scriptPath}"
               if [ -f ${scriptPath} ]; then
                 echo "Executing ${scriptPath}"
@@ -99,10 +97,10 @@ jobs:
                 exit 1
               fi
             }
-            
+      
             # Load and execute required scripts
-            loadAndExecuteGroovyScript "build_react" "" "BuildWithNpm"
-            loadAndExecuteGroovyScript "unitTest" "" "UnitTestWithNpm"
+            loadAndExecuteGroovyScript "BuildWithNpm"
+
 
       # Install dependencies and build React app
       - run:
