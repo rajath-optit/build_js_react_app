@@ -1,0 +1,84 @@
+version: 2.1
+
+executors:
+  default:
+    docker:
+      - image: circleci/python:3.8
+
+jobs:
+  setup:
+    executor: default
+    steps:
+      - checkout
+
+      # Install required packages
+      - run:
+          name: Install Java and other packages
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y unzip wget openjdk-11-jdk
+
+      # Set JAVA_HOME environment variable
+      - run:
+          name: Set JAVA_HOME
+          command: |
+            echo 'export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64' >> $BASH_ENV
+            echo 'export PATH=$JAVA_HOME/bin:$PATH' >> $BASH_ENV
+            source $BASH_ENV
+
+      # Install Groovy
+      - run:
+          name: Install Groovy
+          command: |
+            wget https://groovy.jfrog.io/artifactory/dist-release-local/groovy-zips/apache-groovy-binary-5.0.0-alpha-9.zip -O groovy.zip
+            sudo unzip groovy.zip -d /opt
+            sudo ln -sf /opt/groovy-5.0.0-alpha-9/bin/groovy /usr/local/bin/groovy
+            sudo chmod +x /opt/groovy-5.0.0-alpha-9/bin/groovy
+
+      # Set GROOVY_HOME and update PATH environment variable
+      - run:
+          name: Set GROOVY_HOME
+          command: |
+            echo 'export GROOVY_HOME=/opt/groovy-5.0.0-alpha-9' >> $BASH_ENV
+            echo 'export PATH=$GROOVY_HOME/bin:$PATH' >> $BASH_ENV
+            source $BASH_ENV
+
+      # Verify Groovy installation
+      - run:
+          name: Verify Groovy Installation
+          command: |
+            groovy --version || /opt/groovy-5.0.0-alpha-9/bin/groovy --version
+
+      # Install Node.js and npm
+      - run:
+          name: Install Node.js and npm
+          command: |
+            curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
+            sudo apt-get install -y nodejs
+            node --version
+            npm --version
+
+      # Install dependencies and build React app
+      - run:
+          name: Install dependencies and build
+          command: |
+            npm install
+            npm run build
+
+      # Optionally, run tests or other commands
+      - run:
+          name: Run tests
+          command: |
+            npm test
+
+      # Optionally, deploy or archive artifacts
+      # - run:
+      #     name: Deploy
+      #     command: |
+      #       # Your deployment commands here
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - setup
