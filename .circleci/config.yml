@@ -96,6 +96,13 @@ jobs:
             loadAndExecuteGroovyScript "src/org/common" "build" "BuildWithNpm"
             loadAndExecuteGroovyScript "src/org/common" "unitTest" "UnitTestWithNpm"
 
+
+
+      - run:
+            name: List Directory Contents
+            command: |
+              echo "Listing contents of ~/project:"
+              ls -R ~/project
       # Install dependencies and build React app
       - run:
           name: Build App
