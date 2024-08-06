@@ -11,7 +11,7 @@ jobs:
     executor: docker-executor
     steps:
       - checkout
-      
+
       # Install basic utilities
       - run:
           name: Install basic utilities
@@ -23,7 +23,7 @@ jobs:
       - run:
           name: Install Groovy
           command: |
-            curl -fsSL https://groovy.jfrog.io/artifactory/distributions/groovy-zips/apache-groovy-binary-3.0.9.zip -o groovy.zip && \
+            curl -fsSL https://dl.bintray.com/groovy/maven/apache-groovy-binary-3.0.9.zip -o groovy.zip && \
             unzip groovy.zip -d /opt && \
             sudo ln -s /opt/groovy-3.0.9/bin/groovy /usr/local/bin/groovy && \
             sudo ln -s /opt/groovy-3.0.9/bin/groovysh /usr/local/bin/groovysh && \
@@ -66,17 +66,4 @@ jobs:
           command: |
             docker build -t my-custom-image:latest .
 
-      # Run Docker container and execute commands
-      - run:
-          name: Run Docker container
-          command: |
-            docker run --rm my-custom-image:latest bash -c "java -version && groovy -version && trivy --version && sonar-scanner --version"
-
-workflows:
-  version: 2
-  build_and_test:
-    jobs:
-      - setup_environment
-      - build_and_deploy:
-          requires:
-            - setup_environment
+      # Run Docker containe
