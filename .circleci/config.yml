@@ -23,7 +23,7 @@ jobs:
       - run:
           name: Install Groovy
           command: |
-            curl -fsSL https://dl.bintray.com/groovy/maven/apache-groovy-binary-3.0.9.zip -o groovy.zip && \
+            curl -fsSL https://downloads.apache.org/groovy/3.0.9/distribution/apache-groovy-binary-3.0.9.zip -o groovy.zip && \
             unzip groovy.zip -d /opt && \
             sudo ln -s /opt/groovy-3.0.9/bin/groovy /usr/local/bin/groovy && \
             sudo ln -s /opt/groovy-3.0.9/bin/groovysh /usr/local/bin/groovysh && \
