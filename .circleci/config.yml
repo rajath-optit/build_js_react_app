@@ -25,7 +25,7 @@ jobs:
       - run:
           name: Install Groovy
           command: |
-            curl -fsSL https://groovy.jfrog.io/ui/native/dist-release-local/groovy-zips/apache-groovy-sdk-4.0.22.zip -o groovy.zip && \
+            curl -fsSL https://downloads.apache.org/groovy/4.0.22/distributions/apache-groovy-sdk-4.0.22.zip -o groovy.zip && \
             unzip groovy.zip -d /opt && \
             sudo ln -s /opt/groovy-4.0.22/bin/groovy /usr/local/bin/groovy && \
             sudo ln -s /opt/groovy-4.0.22/bin/groovysh /usr/local/bin/groovysh && \
