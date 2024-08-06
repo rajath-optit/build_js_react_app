@@ -1,82 +1,60 @@
 version: 2.1
 
 executors:
-  docker-executor:
+  java-node-docker-executor:
     docker:
-      - image: cimg/openjdk:17.0.11-browsers
-    working_directory: ~/project
+      - image: circleci/python:3.8  # Choose an appropriate base image
 
 jobs:
-  setup_environment:
-    executor: docker-executor
+  install_dependencies:
+    executor: java-node-docker-executor
     steps:
       - checkout
-
-      # Install basic utilities
       - run:
-          name: Install basic utilities
+          name: Install Node.js and npm
           command: |
-            sudo apt-get update
-            sudo apt-get install -y curl gnupg unzip
-
-      # Install Groovy
+            curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash -
+            sudo apt-get install -y nodejs
+            node --version
+            npm --version
       - run:
           name: Install Groovy
           command: |
-            curl -fsSL https://groovy.jfrog.io/ui/native/dist-release-local/groovy-zips/apache-groovy-sdk-4.0.22.zip -o groovy.zip && \
-            unzip groovy.zip -d /opt && \
-            sudo ln -s /opt/groovy-4.0.22/bin/groovy /usr/local/bin/groovy && \
-            sudo ln -s /opt/groovy-4.0.22/bin/groovysh /usr/local/bin/groovysh && \
-            sudo ln -s /opt/groovy-4.0.22/bin/groovyc /usr/local/bin/groovyc && \
-            sudo ln -s /opt/groovy-4.0.22/bin/groovyConsole /usr/local/bin/groovyConsole && \
-            rm groovy.zip
-
-      # Install Trivy
-      - run:
-          name: Install Trivy
-          command: |
-            curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh
-
-      # Install SonarQube Scanner
+            wget https://groovy.jfrog.io/artifactory/dist-release-local/groovy-zips/apache-groovy-binary-2.4.10.zip
+            unzip apache-groovy-binary-2.4.10.zip
+            sudo mv groovy-2.4.10 /usr/local/groovy
+            export PATH=$PATH:/usr/local/groovy/bin
+            groovy --version
       - run:
           name: Install SonarQube Scanner
           command: |
-            curl -Lo sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.7.0.2747-linux.zip && \
-            unzip sonar-scanner.zip -d /opt && \
-            sudo ln -s /opt/sonar-scanner-4.7.0.2747-linux/bin/sonar-scanner /usr/local/bin/sonar-scanner && \
-            rm sonar-scanner.zip
-
-      # Verify installations
-      - run:
-          name: Verify installations
-          command: |
-            java -version
-            groovy -version
-            trivy --version
+            wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.2.2472-linux.zip
+            unzip sonar-scanner-cli-4.6.2.2472-linux.zip
+            sudo mv sonar-scanner-4.6.2.2472-linux /usr/local/sonar-scanner
+            export PATH=$PATH:/usr/local/sonar-scanner/bin
             sonar-scanner --version
+      - run:
+          name: Install Docker
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y docker.io
+            sudo usermod -aG docker $(whoami)
+            docker --version
 
-  build_and_deploy:
-    executor: docker-executor
+  build:
+    executor: java-node-docker-executor
     steps:
       - checkout
-      
-      # Build Docker image
       - run:
-          name: Build Docker image
+          name: Build Project
           command: |
-            docker build -t my-custom-image:latest .
-
-      # Run Docker container and execute commands
-      - run:
-          name: Run Docker container
-          command: |
-            docker run --rm my-custom-image:latest bash -c "java -version && groovy -version && trivy --version && sonar-scanner --version"
+            # Add your build commands here
 
 workflows:
   version: 2
   build_and_test:
     jobs:
-      - setup_environment
-      - build_and_deploy:
+      - install_dependencies
+      - build:
           requires:
-            - setup_environment
+            - install_dependencies
