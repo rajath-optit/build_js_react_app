@@ -17,6 +17,15 @@ jobs:
           command: |
             sudo apt-get update
             sudo apt-get install -y unzip wget openjdk-11-jdk
+      - run:
+          name: Print GIT_TOKEN
+          command: |
+            if [ -z "$GIT_TOKEN" ]; then
+              echo "GIT_TOKEN is not set"
+              exit 1
+            else
+              echo "GIT_TOKEN is set"
+            fi
 
       # Set JAVA_HOME environment variable test
       - run:
