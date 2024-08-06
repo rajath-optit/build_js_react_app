@@ -23,12 +23,12 @@ jobs:
       - run:
           name: Install Groovy
           command: |
-            curl -fsSL https://downloads.apache.org/groovy/3.0.9/distribution/apache-groovy-binary-3.0.9.zip -o groovy.zip && \
+            curl -fsSL https://groovy.jfrog.io/ui/native/dist-release-local/groovy-zips/apache-groovy-sdk-4.0.22.zip -o groovy.zip && \
             unzip groovy.zip -d /opt && \
-            sudo ln -s /opt/groovy-3.0.9/bin/groovy /usr/local/bin/groovy && \
-            sudo ln -s /opt/groovy-3.0.9/bin/groovysh /usr/local/bin/groovysh && \
-            sudo ln -s /opt/groovy-3.0.9/bin/groovyc /usr/local/bin/groovyc && \
-            sudo ln -s /opt/groovy-3.0.9/bin/groovyConsole /usr/local/bin/groovyConsole && \
+            sudo ln -s /opt/groovy-4.0.22/bin/groovy /usr/local/bin/groovy && \
+            sudo ln -s /opt/groovy-4.0.22/bin/groovysh /usr/local/bin/groovysh && \
+            sudo ln -s /opt/groovy-4.0.22/bin/groovyc /usr/local/bin/groovyc && \
+            sudo ln -s /opt/groovy-4.0.22/bin/groovyConsole /usr/local/bin/groovyConsole && \
             rm groovy.zip
 
       # Install Trivy
