@@ -113,7 +113,7 @@ jobs:
           name: Run Tests
           command: |
             cd ~/project
-            groovy Jenkins/shared-libraries/vars/common/uniTest/unitTestWithNpm.groovy
+            groovy Jenkins/shared-libraries/src/org/common/unitTest/UnitTestWithNpm.groovy
 
 workflows:
   version: 2
