@@ -60,6 +60,12 @@ jobs:
 
       # Define baseDir for the project
       - run:
+          name: List Project Files
+          command: |
+            echo "Listing files in project directory:"
+            ls -R ~/project
+
+      - run:
           name: Load and Execute Groovy Scripts
           command: |
             cd ~/project
@@ -71,6 +77,7 @@ jobs:
               technology=$2
               scriptName=$3
               scriptPath="${baseDir}/${type}/${technology}/${scriptName}.groovy"
+              echo "Looking for script at ${scriptPath}"
               if [ -f ${scriptPath} ]; then
                 echo "Executing ${scriptPath}"
                 groovy ${scriptPath}
