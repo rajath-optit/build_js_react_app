@@ -22,7 +22,7 @@ jobs:
       - run:
           name: Download Groovy
           command: |
-            wget https://dl.bintray.com/groovy/maven/groovy-binary-2.4.10.zip -O groovy.zip
+            wget https://github.com/apache/groovy/releases/download/groovy-2.4.10/apache-groovy-sdk-2.4.10.zip -O groovy.zip
 
       - run:
           name: Extract Groovy
@@ -33,7 +33,7 @@ jobs:
       - run:
           name: Verify Groovy Installation
           command: |
-            sudo /opt/groovy-2.4.10/bin/groovy -version
+            sudo /opt/apache-groovy-sdk-2.4.10/bin/groovy -version
 
       # Clean up
       - run:
