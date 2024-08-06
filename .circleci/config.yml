@@ -58,25 +58,11 @@ jobs:
             node --version
             npm --version
 
-      # Install dependencies and build React app
-      - run:
-          name: Install dependencies and build
-          command: |
-            npm install
-            npm run build
-
-      # Optionally, run tests or other commands
-      - run:
-          name: Run tests
-          command: |
-            npm test
-
-      # Load and execute Groovy scripts
+      # Define baseDir for the project
       - run:
           name: Load and Execute Groovy Scripts
           command: |
             cd ~/project
-            # Define baseDir for the project
             baseDir="${PWD}/Jenkins/shared-libraries"
             
             # Function to load and execute a Groovy script
@@ -102,6 +88,18 @@ jobs:
             loadAndExecuteGroovyScript "vars/common" "dockerUtil" "DockerScan"
             loadAndExecuteGroovyScript "src/org/common" "build" "BuildWithNpm"
             loadAndExecuteGroovyScript "src/org/common" "unitTest" "UnitTestWithNpm"
+
+      # Install dependencies and build React app
+      - run:
+          name: Build App
+          command: |
+            groovy ${baseDir}/src/org/common/build/BuildWithNpm.groovy
+
+      # Optionally, run tests or other commands
+      - run:
+          name: Run Tests
+          command: |
+            groovy ${baseDir}/src/org/common/unitTest/UnitTestWithNpm.groovy
 
 workflows:
   version: 2
