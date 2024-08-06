@@ -58,18 +58,31 @@ jobs:
             node --version
             npm --version
 
-      # Define baseDir for the project
+      # Debugging: List contents of project directory
       - run:
           name: List Project Files
           command: |
-            echo "Listing files in project directory:"
+            echo "Listing contents of ~/project:"
             ls -R ~/project
 
+      # Check script existence
+      - run:
+          name: Check Script Existence
+          command: |
+            cd ~/project
+            if [ -f "${PWD}/pipeline/build_react/BuildWithNpm.groovy" ]; then
+              echo "BuildWithNpm.groovy exists."
+            else
+              echo "BuildWithNpm.groovy does not exist."
+              exit 1
+            fi
+
+      # Define baseDir for the project and execute scripts
       - run:
           name: Load and Execute Groovy Scripts
           command: |
             cd ~/project
-            baseDir="${PWD}/Jenkins/shared-libraries"
+            baseDir="${PWD}/pipeline"
             
             # Function to load and execute a Groovy script
             loadAndExecuteGroovyScript() {
@@ -88,32 +101,20 @@ jobs:
             }
             
             # Load and execute required scripts
-            loadAndExecuteGroovyScript "vars/common/scm-util" "git" "GitCheckout"
-            loadAndExecuteGroovyScript "vars/common" "codeAnalysis" "PerformSonarAnalysisForReactjs"
-            loadAndExecuteGroovyScript "vars/common" "dockerUtil" "DockerUtil"
-            loadAndExecuteGroovyScript "vars/common" "containerPublish" "DockerHubPublish"
-            loadAndExecuteGroovyScript "vars/common" "dockerUtil" "DockerScan"
-            loadAndExecuteGroovyScript "src/org/common" "build" "BuildWithNpm"
-            loadAndExecuteGroovyScript "src/org/common" "unitTest" "UnitTestWithNpm"
+            loadAndExecuteGroovyScript "build_react" "" "BuildWithNpm"
+            loadAndExecuteGroovyScript "unitTest" "" "UnitTestWithNpm"
 
-
-
-      - run:
-            name: List Directory Contents
-            command: |
-              echo "Listing contents of ~/project:"
-              ls -R ~/project
       # Install dependencies and build React app
       - run:
           name: Build App
           command: |
-            groovy ${baseDir}/src/org/common/build/BuildWithNpm.groovy
+            groovy ${baseDir}/build_react/BuildWithNpm.groovy
 
       # Optionally, run tests or other commands
       - run:
           name: Run Tests
           command: |
-            groovy ${baseDir}/src/org/common/unitTest/UnitTestWithNpm.groovy
+            groovy ${baseDir}/unitTest/UnitTestWithNpm.groovy
 
 workflows:
   version: 2
