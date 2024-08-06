@@ -19,13 +19,17 @@ jobs:
             sudo apt-get update
             sudo apt-get install -y curl gnupg unzip
 
-      # Install Groovy 2.1 using SDKMAN! (recommended)
+      # Install Groovy
       - run:
-          name: Install SDKMAN! and Groovy 2.1
+          name: Install Groovy
           command: |
-            curl -s "https://get.sdkman.io" | bash
-            source "$HOME/.sdkman/bin/sdkman-init.sh"
-            sdk install groovy 2.1
+            curl -fsSL https://dl.bintray.com/groovy/maven/apache-groovy-binary-3.0.9.zip -o groovy.zip && \
+            unzip groovy.zip -d /opt && \
+            sudo ln -s /opt/groovy-3.0.9/bin/groovy /usr/local/bin/groovy && \
+            sudo ln -s /opt/groovy-3.0.9/bin/groovysh /usr/local/bin/groovysh && \
+            sudo ln -s /opt/groovy-3.0.9/bin/groovyc /usr/local/bin/groovyc && \
+            sudo ln -s /opt/groovy-3.0.9/bin/groovyConsole /usr/local/bin/groovyConsole && \
+            rm groovy.zip
 
       # Install Trivy
       - run:
@@ -55,7 +59,7 @@ jobs:
     executor: docker-executor
     steps:
       - checkout
-
+      
       # Build Docker image
       - run:
           name: Build Docker image
@@ -74,5 +78,5 @@ workflows:
     jobs:
       - setup_environment
       - build_and_deploy:
-        requires:
-          - setup_environment
+          requires:
+            - setup_environment
