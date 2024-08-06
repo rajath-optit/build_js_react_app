@@ -106,7 +106,7 @@ jobs:
           name: Build App
           command: |
             cd ~/project
-            groovy ${baseDir}/BuildWithNpm.groovy
+            groovy Jenkins/shared-libraries/src/org/common/build/BuildWithNpm.groovy
 
       # Optionally, run tests or other commands
       - run:
