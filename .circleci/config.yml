@@ -106,14 +106,14 @@ jobs:
           name: Build App
           command: |
             cd ~/project
-            groovy Jenkins/shared-libraries/src/org/common/build/BuildWithNpm.groovy
+            groovy ${baseDir}/BuildWithNpm.groovy
 
       # Optionally, run tests or other commands
       - run:
           name: Run Tests
           command: |
             cd ~/project
-            groovy Jenkins/shared-libraries/vars/common/unitTest/UnitTestWithNpm.groovy
+            groovy Jenkins/shared-libraries/vars/common/uniTest/unitTestWithNpm.groovy
 
 workflows:
   version: 2
