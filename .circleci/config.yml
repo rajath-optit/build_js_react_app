@@ -22,7 +22,7 @@ jobs:
       - run:
           name: Download Groovy
           command: |
-            wget https://github.com/apache/groovy/releases/download/groovy-2.4.10/apache-groovy-sdk-2.4.10.zip -O groovy.zip
+            wget https://archive.apache.org/dist/groovy/2.4.10/apache-groovy-sdk-2.4.10.zip -O groovy.zip
 
       - run:
           name: Extract Groovy
