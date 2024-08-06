@@ -17,21 +17,32 @@ jobs:
           name: Install basic utilities
           command: |
             sudo apt-get update
-            sudo apt-get install -y curl gnupg
+            sudo apt-get install -y curl gnupg unzip
 
-   
-
-      # Install Java and Groovy
+      # Install Groovy
       - run:
-          name: Install Java and Groovy
+          name: Install Groovy
           command: |
-            sudo apt-get install -y openjdk-11-jdk
             curl -s https://groovy.jfrog.io/artifactory/distributions/groovy-binary-3.0.9.zip -o groovy.zip
-            unzip groovy.zip -d /opt
+            sudo unzip groovy.zip -d /opt
             sudo ln -s /opt/groovy-3.0.9/bin/groovy /usr/local/bin/groovy
             sudo ln -s /opt/groovy-3.0.9/bin/groovysh /usr/local/bin/groovysh
             sudo ln -s /opt/groovy-3.0.9/bin/groovyc /usr/local/bin/groovyc
             sudo ln -s /opt/groovy-3.0.9/bin/groovyConsole /usr/local/bin/groovyConsole
+
+      # Install Trivy
+      - run:
+          name: Install Trivy
+          command: |
+            curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh
+
+      # Install SonarQube Scanner
+      - run:
+          name: Install SonarQube Scanner
+          command: |
+            curl -Lo sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.7.0.2747-linux.zip
+            unzip sonar-scanner.zip -d /opt
+            sudo ln -s /opt/sonar-scanner-4.7.0.2747-linux/bin/sonar-scanner /usr/local/bin/sonar-scanner
 
       # Verify installations
       - run:
