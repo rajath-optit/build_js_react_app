@@ -1,48 +1,60 @@
 version: 2.1
 
 executors:
-  default:
+  java-node-docker-executor:
     docker:
-      - image: circleci/python:3.8  # Use a Python image, or another image that suits your needs
+      - image: circleci/python:3.8  # Choose an appropriate base image
 
 jobs:
-  setup:
-    executor: default
+  install_dependencies:
+    executor: java-node-docker-executor
     steps:
-      - checkout  # Check out the code from your repository
-
-      # Install required packages
+      - checkout
       - run:
-          name: Install required packages
+          name: Install Node.js and npm
+          command: |
+            curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash -
+            sudo apt-get install -y nodejs
+            node --version
+            npm --version
+      - run:
+          name: Install Groovy
+          command: |
+            wget https://dist.apache.org/repos/dist/release/groovy/2.4.10/bin/apache-groovy-binary-2.4.10.zip
+            unzip apache-groovy-binary-2.4.10.zip
+            sudo mv groovy-2.4.10 /usr/local/groovy
+            export PATH=$PATH:/usr/local/groovy/bin
+            groovy --version
+      - run:
+          name: Install SonarQube Scanner
+          command: |
+            wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.2.2472-linux.zip
+            unzip sonar-scanner-cli-4.6.2.2472-linux.zip
+            sudo mv sonar-scanner-4.6.2.2472-linux /usr/local/sonar-scanner
+            export PATH=$PATH:/usr/local/sonar-scanner/bin
+            sonar-scanner --version
+      - run:
+          name: Install Docker
           command: |
             sudo apt-get update
-            sudo apt-get install -y unzip wget
+            sudo apt-get install -y docker.io
+            sudo usermod -aG docker $(whoami)
+            docker --version
 
-      # Download and extract Groovy
+  build:
+    executor: java-node-docker-executor
+    steps:
+      - checkout
       - run:
-          name: Download Groovy
+          name: Build Project
           command: |
-            wget https://archive.apache.org/dist/groovy/2.4.10/apache-groovy-sdk-2.4.10.zip -O groovy.zip
-
-      - run:
-          name: Extract Groovy
-          command: |
-            sudo unzip groovy.zip -d /opt
-
-      # Verify the installation
-      - run:
-          name: Verify Groovy Installation
-          command: |
-            sudo /opt/apache-groovy-sdk-2.4.10/bin/groovy -version
-
-      # Clean up
-      - run:
-          name: Clean up
-          command: |
-            rm -f groovy.zip
+            # Add your build commands here
 
 workflows:
   version: 2
-  build:
+  build_and_test:
     jobs:
-      - setup
+      - install_dependencies
+      - build:
+          requires:
+            - install_dependencies
