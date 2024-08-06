@@ -1,84 +1,48 @@
 version: 2.1
 
 executors:
-  docker-executor:
+  default:
     docker:
-      - image: cimg/openjdk:17.0.11-browsers
-    working_directory: ~/project
-    environment:
-      JAVA_HOME: /usr/lib/jvm/java-11-openjdk-amd64
+      - image: circleci/python:3.8  # Use a Python image, or another image that suits your needs
 
 jobs:
-  setup_environment:
-    executor: docker-executor
+  setup:
+    executor: default
     steps:
-      - checkout
+      - checkout  # Check out the code from your repository
 
-      # Install basic utilities
+      # Install required packages
       - run:
-          name: Install basic utilities
+          name: Install required packages
           command: |
             sudo apt-get update
-            sudo apt-get install -y curl gnupg unzip
+            sudo apt-get install -y unzip wget
 
-      # Install Groovy
+      # Download and extract Groovy
       - run:
-          name: Install Groovy
+          name: Download Groovy
           command: |
-            curl -fsSL https://groovy.jfrog.io/artifactory/dist-release-local/groovy-zips/apache-groovy-binary-2.4.10.zip -o groovy.zip && \
-            unzip groovy.zip -d /opt && \
-            sudo ln -s /opt/groovy-2.4.10/bin/groovy /usr/local/bin/groovy && \
-            sudo ln -s /opt/groovy-2.4.10/bin/groovysh /usr/local/bin/groovysh && \
-            sudo ln -s /opt/groovy-2.4.10/bin/groovyc /usr/local/bin/groovyc && \
-            sudo ln -s /opt/groovy-2.4.10/bin/groovyConsole /usr/local/bin/groovyConsole && \
-            rm groovy.zip
+            wget https://dl.bintray.com/groovy/maven/groovy-binary-2.4.10.zip -O groovy.zip
 
-      # Install Trivy
       - run:
-          name: Install Trivy
+          name: Extract Groovy
           command: |
-            curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh
+            sudo unzip groovy.zip -d /opt
 
-      # Install SonarQube Scanner
+      # Verify the installation
       - run:
-          name: Install SonarQube Scanner
+          name: Verify Groovy Installation
           command: |
-            curl -Lo sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.7.0.2747-linux.zip && \
-            unzip sonar-scanner.zip -d /opt && \
-            sudo ln -s /opt/sonar-scanner-4.7.0.2747-linux/bin/sonar-scanner /usr/local/bin/sonar-scanner && \
-            rm sonar-scanner.zip
+            sudo /opt/groovy-2.4.10/bin/groovy -version
 
-      # Verify installations
+      # Clean up
       - run:
-          name: Verify installations
+          name: Clean up
           command: |
-            java -version
-            groovy -version
-            trivy --version
-            sonar-scanner --version
-
-  build_and_deploy:
-    executor: docker-executor
-    steps:
-      - checkout
-      
-      # Build Docker image
-      - run:
-          name: Build Docker image
-          command: |
-            docker build -t my-custom-image:latest .
-
-      # Run Docker container and execute commands
-      - run:
-          name: Run Docker container
-          command: |
-            docker run --rm my-custom-image:latest bash -c "java -version && groovy -version && trivy --version && sonar-scanner --version"
+            rm -f groovy.zip
 
 workflows:
   version: 2
-  build_and_test:
+  build:
     jobs:
-      - setup_environment
-      - build_and_deploy:
-          requires:
-            - setup_environment
+      - setup
