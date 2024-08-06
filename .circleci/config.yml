@@ -13,42 +13,61 @@ jobs:
 
       # Install required packages
       - run:
-          name: Install required packages
+          name: Install Java and other packages
           command: |
             sudo apt-get update
-            sudo apt-get install -y unzip wget
+            sudo apt-get install -y unzip wget openjdk-11-jdk
 
-      # Download and extract Groovy
+      # Set JAVA_HOME environment variable
       - run:
-          name: Download Groovy
+          name: Set JAVA_HOME
+          command: |
+            echo 'export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64' >> $BASH_ENV
+            echo 'export PATH=$JAVA_HOME/bin:$PATH' >> $BASH_ENV
+            source $BASH_ENV
+
+      # Install Groovy
+      - run:
+          name: Install Groovy
           command: |
             wget https://groovy.jfrog.io/artifactory/dist-release-local/groovy-zips/apache-groovy-binary-5.0.0-alpha-9.zip -O groovy.zip
-
-      - run:
-          name: Extract Groovy
-          command: |
             sudo unzip groovy.zip -d /opt
+            sudo ln -s /opt/apache-groovy-binary-5.0.0-alpha-9/bin/groovy /usr/local/bin/groovy
+            groovy --version
 
-      # Verify extracted files
+      # Run Groovy script to prepare for build (if needed)
       - run:
-          name: List contents of /opt
+          name: Run Groovy Script
           command: |
-            ls -l /opt
+            groovy path/to/your-script.groovy
 
-      # Verify the installation
+      # Install Node.js and npm
       - run:
-          name: Verify Groovy Installation
+          name: Install Node.js and npm
           command: |
-            # Find the actual path to the Groovy binary
-            groovy_bin=$(find /opt -name groovy -type f -executable)
-            echo "Groovy binary found at: $groovy_bin"
-            sudo $groovy_bin -version
+            curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
+            sudo apt-get install -y nodejs
+            node --version
+            npm --version
 
-      # Clean up
+      # Install dependencies and build React app
       - run:
-          name: Clean up
+          name: Install dependencies and build
           command: |
-            rm -f groovy.zip
+            npm install
+            npm run build
+
+      # Optionally, run tests or other commands
+      - run:
+          name: Run tests
+          command: |
+            npm test
+
+      # Optionally, deploy or archive artifacts
+      # - run:
+      #     name: Deploy
+      #     command: |
+      #       # Your deployment commands here
 
 workflows:
   version: 2
