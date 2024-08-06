@@ -23,12 +23,13 @@ jobs:
       - run:
           name: Install Groovy
           command: |
-            curl -s https://groovy.jfrog.io/artifactory/distributions/groovy-binary-3.0.9.zip -o groovy.zip
-            sudo unzip groovy.zip -d /opt
-            sudo ln -s /opt/groovy-3.0.9/bin/groovy /usr/local/bin/groovy
-            sudo ln -s /opt/groovy-3.0.9/bin/groovysh /usr/local/bin/groovysh
-            sudo ln -s /opt/groovy-3.0.9/bin/groovyc /usr/local/bin/groovyc
-            sudo ln -s /opt/groovy-3.0.9/bin/groovyConsole /usr/local/bin/groovyConsole
+            curl -fsSL https://groovy.jfrog.io/artifactory/distributions/groovy-zips/apache-groovy-binary-3.0.9.zip -o groovy.zip && \
+            unzip groovy.zip -d /opt && \
+            sudo ln -s /opt/groovy-3.0.9/bin/groovy /usr/local/bin/groovy && \
+            sudo ln -s /opt/groovy-3.0.9/bin/groovysh /usr/local/bin/groovysh && \
+            sudo ln -s /opt/groovy-3.0.9/bin/groovyc /usr/local/bin/groovyc && \
+            sudo ln -s /opt/groovy-3.0.9/bin/groovyConsole /usr/local/bin/groovyConsole && \
+            rm groovy.zip
 
       # Install Trivy
       - run:
@@ -40,9 +41,10 @@ jobs:
       - run:
           name: Install SonarQube Scanner
           command: |
-            curl -Lo sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.7.0.2747-linux.zip
-            unzip sonar-scanner.zip -d /opt
-            sudo ln -s /opt/sonar-scanner-4.7.0.2747-linux/bin/sonar-scanner /usr/local/bin/sonar-scanner
+            curl -Lo sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.7.0.2747-linux.zip && \
+            unzip sonar-scanner.zip -d /opt && \
+            sudo ln -s /opt/sonar-scanner-4.7.0.2747-linux/bin/sonar-scanner /usr/local/bin/sonar-scanner && \
+            rm sonar-scanner.zip
 
       # Verify installations
       - run:
