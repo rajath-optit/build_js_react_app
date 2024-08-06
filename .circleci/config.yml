@@ -18,7 +18,7 @@ jobs:
             sudo apt-get update
             sudo apt-get install -y unzip wget openjdk-11-jdk
 
-      # Set JAVA_HOME environment variable
+      # Set JAVA_HOME environment variable test
       - run:
           name: Set JAVA_HOME
           command: |
