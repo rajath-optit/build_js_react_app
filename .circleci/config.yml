@@ -151,6 +151,22 @@ jobs:
             fi
             docker build -t ${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG} .
 
+      # Install Trivy
+      - run:
+          name: Install Trivy
+          command: |
+            sudo apt-get install -y wget apt-transport-https gnupg lsb-release
+            wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+            echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | sudo tee -a /etc/apt/sources.list.d/trivy.list
+            sudo apt-get update
+            sudo apt-get install -y trivy
+
+      # Scan Docker Image with Trivy
+      - run:
+          name: Scan Docker Image
+          command: |
+            trivy image ${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}
+
       # Publish Docker Image
       - run:
           name: Publish Docker Image
