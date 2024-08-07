@@ -138,6 +138,22 @@ jobs:
           command: |
             sonar-scanner --version || /opt/sonar-scanner/bin/sonar-scanner --version
 
+      # Build Docker Image
+      - setup_remote_docker:
+          version: 20.10.7
+      - run:
+          name: Build Docker Image
+          command: |
+            cd ~/project
+            docker build -t ${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG} .
+
+      # Publish Docker Image
+      - run:
+          name: Publish Docker Image
+          command: |
+            echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+            docker push ${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}
+
 workflows:
   version: 2
   build:
