@@ -145,12 +145,20 @@ jobs:
           name: Build Docker Image
           command: |
             cd ~/project
+            if [ -z "$DOCKER_REPO" ] || [ -z "$DOCKER_IMAGE_NAME" ] || [ -z "$DOCKER_IMAGE_TAG" ]; then
+              echo "Docker environment variables are not set."
+              exit 1
+            fi
             docker build -t ${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG} .
 
       # Publish Docker Image
       - run:
           name: Publish Docker Image
           command: |
+            if [ -z "$DOCKER_USERNAME" ] || [ -z "$DOCKER_PASSWORD" ]; then
+              echo "Docker credentials are not set."
+              exit 1
+            fi
             echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
             docker push ${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}
 
