@@ -66,7 +66,8 @@ jobs:
       - run:
           name: Run SonarQube Analysis
           command: |
-            groovy Jenkins/shared-libraries/src/org/common/sonar/SonarQubeAnalysis.groovy
+            groovy Jenkins/shared-libraries/src/org/common/codeAnalysis/PerformSonarAnalysis.groovy
+            
 
       # Build Docker Image
       - setup_remote_docker:
@@ -74,7 +75,7 @@ jobs:
       - run:
           name: Build Docker Image
           command: |
-            groovy Jenkins/shared-libraries/src/org/common/docker/BuildDockerImage.groovy
+            groovy Jenkins/shared-libraries/vars/common/dockerUtil/DockerUtil.groovy
 
       # Scan Docker Image with Trivy
       - run:
