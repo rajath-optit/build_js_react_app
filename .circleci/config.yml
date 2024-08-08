@@ -54,20 +54,21 @@ jobs:
       - run:
           name: Run Build Script
           command: |
-            groovy Jenkins/shared-libraries/src/org/common/build/BuildWithNpm.groovy
+            groovy Jenkins/shared-libraries/src/org/common/build/BuildWithNpm.groovy | tee build-script.log
 
       # Run Groovy script for test
       - run:
           name: Run Test Script
           command: |
-            groovy Jenkins/shared-libraries/src/org/common/unitTest/UnitTestWithNpm.groovy
+            groovy Jenkins/shared-libraries/src/org/common/unitTest/UnitTestWithNpm.groovy | tee test-script.log
 
       # Run Groovy script for SonarQube analysis
       - run:
           name: Run SonarQube Analysis
           command: |
-            groovy Jenkins/shared-libraries/vars/common/codeAnalysis/PerformSonarAnalysisForReactjs.groovy
-            
+            groovy Jenkins/shared-libraries/vars/common/codeAnalysis/PerformSonarAnalysisForReactjs.groovy | tee sonar-analysis.log
+            # Print the location of the SonarQube report if it generates a local file
+            echo "SonarQube analysis completed. Check the SonarQube dashboard for results."
 
       # Build Docker Image
       - setup_remote_docker:
@@ -75,19 +76,21 @@ jobs:
       - run:
           name: Build Docker Image
           command: |
-            groovy Jenkins/shared-libraries/vars/common/dockerUtil/DockerUtil.groovy
+            groovy Jenkins/shared-libraries/vars/common/dockerUtil/DockerUtil.groovy | tee docker-build.log
 
       # Scan Docker Image with Trivy
       - run:
           name: Scan Docker Image
           command: |
-            groovy Jenkins/shared-libraries/vars/common/dockerUtil/DockerScan.groovy
+            groovy Jenkins/shared-libraries/vars/common/dockerUtil/DockerScan.groovy | tee docker-scan.log
+            # Print the location of the Docker scan report if it generates a local file
+            echo "Docker scan completed. Check the Trivy scan report for details."
 
       # Publish Docker Image
       - run:
           name: Publish Docker Image
           command: |
-            groovy Jenkins/shared-libraries/vars/common/containerPublish/DockerHubPublish.groovy
+            groovy Jenkins/shared-libraries/vars/common/containerPublish/DockerHubPublish.groovy | tee docker-publish.log
 
 workflows:
   version: 2
