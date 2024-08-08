@@ -18,6 +18,14 @@ jobs:
             sudo apt-get update
             sudo apt-get install -y unzip wget openjdk-11-jdk
 
+      # Set JAVA_HOME environment variable
+      - run:
+          name: Set JAVA_HOME
+          command: |
+            echo 'export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64' >> $BASH_ENV
+            echo 'export PATH=$JAVA_HOME/bin:$PATH' >> $BASH_ENV
+            source $BASH_ENV
+
       # Install Groovy
       - run:
           name: Install Groovy
@@ -27,20 +35,13 @@ jobs:
             sudo ln -sf /opt/groovy-5.0.0-alpha-9/bin/groovy /usr/local/bin/groovy
             sudo chmod +x /opt/groovy-5.0.0-alpha-9/bin/groovy
 
-      # Set JAVA_HOME and GROOVY_HOME environment variables and update PATH
+      # Set GROOVY_HOME and update PATH environment variable
       - run:
-          name: Set Environment Variables
+          name: Set GROOVY_HOME
           command: |
-            echo 'export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64' >> $BASH_ENV
             echo 'export GROOVY_HOME=/opt/groovy-5.0.0-alpha-9' >> $BASH_ENV
-            echo 'export PATH=$JAVA_HOME/bin:$GROOVY_HOME/bin:$PATH' >> $BASH_ENV
+            echo 'export PATH=$GROOVY_HOME/bin:$PATH' >> $BASH_ENV
             source $BASH_ENV
-
-      # Verify Groovy installation
-      - run:
-          name: Verify Groovy Installation
-          command: |
-            groovy --version || /opt/groovy-5.0.0-alpha-9/bin/groovy --version
 
       # Install Node.js and npm
       - run:
@@ -51,64 +52,30 @@ jobs:
             node --version
             npm --version
 
-      # Debugging: List contents of project directory
-      - run:
-          name: List Project Files
-          command: |
-            echo "Listing contents of ~/project:"
-            ls -R ~/project
-
-      # Check script existence
-      - run:
-          name: Check Script Existence
-          command: |
-            cd ~/project
-            if [ -f "Jenkins/shared-libraries/src/org/common/build/BuildWithNpm.groovy" ]; then
-              echo "BuildWithNpm.groovy exists."
-            else
-              echo "BuildWithNpm.groovy does not exist."
-              exit 1
-            fi
-
-      # Define baseDir for the project and execute scripts
-      - run:
-          name: Load and Execute Groovy Scripts
-          command: |
-            cd ~/project
-            baseDir="Jenkins/shared-libraries/src/org/common/build"
-      
-            # Function to load and execute a Groovy script
-            loadAndExecuteGroovyScript() {
-              scriptName=$1
-              scriptPath="${baseDir}/${scriptName}.groovy"
-              echo "Looking for script at ${scriptPath}"
-              if [ -f "${scriptPath}" ]; then
-                echo "Executing ${scriptPath}"
-                groovy ${scriptPath}
-              else
-                echo "Script ${scriptPath} not found!"
-                exit 1
-              fi
-            }
-      
-            # Load and execute required scripts
-            loadAndExecuteGroovyScript "BuildWithNpm"
-
-      # Install dependencies and build React app
+  build:
+    executor: default
+    steps:
+      - checkout
       - run:
           name: Build App
           command: |
             cd ~/project
             groovy Jenkins/shared-libraries/src/org/common/build/BuildWithNpm.groovy
 
-      # Optionally, run tests or other commands
+  test:
+    executor: default
+    steps:
+      - checkout
       - run:
           name: Run Tests
           command: |
             cd ~/project
             groovy Jenkins/shared-libraries/src/org/common/unitTest/UnitTestWithNpm.groovy
 
-      # Install SonarQube Scanner
+  sonarqube:
+    executor: default
+    steps:
+      - checkout
       - run:
           name: Install SonarQube Scanner
           command: |
@@ -116,22 +83,29 @@ jobs:
             unzip sonar-scanner-cli-4.6.2.2472-linux.zip
             sudo mv sonar-scanner-4.6.2.2472-linux /opt/sonar-scanner
             sudo ln -sf /opt/sonar-scanner/bin/sonar-scanner /usr/local/bin/sonar-scanner
-
-      # Set SonarQube environment variables
       - run:
           name: Set SonarQube Environment Variables
           command: |
             echo 'export SONAR_SCANNER_HOME=/opt/sonar-scanner' >> $BASH_ENV
             echo 'export PATH=$SONAR_SCANNER_HOME/bin:$PATH' >> $BASH_ENV
             source $BASH_ENV
-
-      # Verify SonarQube Scanner installation
       - run:
           name: Verify SonarQube Scanner Installation
           command: |
             sonar-scanner --version || /opt/sonar-scanner/bin/sonar-scanner --version
+      - run:
+          name: Run SonarQube Analysis
+          command: |
+            sonar-scanner \
+              -Dsonar.projectKey=my-project \
+              -Dsonar.sources=. \
+              -Dsonar.host.url=$SONAR_HOST_URL \
+              -Dsonar.login=$SONAR_LOGIN
 
-      # Build Docker Image
+  docker-build:
+    executor: default
+    steps:
+      - checkout
       - setup_remote_docker:
           version: 20.10.7
       - run:
@@ -144,7 +118,12 @@ jobs:
             fi
             docker build -t ${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG} .
 
-      # Install Trivy
+  docker-scan:
+    executor: default
+    steps:
+      - checkout
+      - setup_remote_docker:
+          version: 20.10.7
       - run:
           name: Install Trivy
           command: |
@@ -153,14 +132,17 @@ jobs:
             echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | sudo tee -a /etc/apt/sources.list.d/trivy.list
             sudo apt-get update
             sudo apt-get install -y trivy
-
-      # Scan Docker Image with Trivy
       - run:
           name: Scan Docker Image
           command: |
             trivy image ${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}
 
-      # Publish Docker Image
+  docker-publish:
+    executor: default
+    steps:
+      - checkout
+      - setup_remote_docker:
+          version: 20.10.7
       - run:
           name: Publish Docker Image
           command: |
@@ -173,6 +155,24 @@ jobs:
 
 workflows:
   version: 2
-  build:
+  build_and_test:
     jobs:
       - setup
+      - build:
+          requires:
+            - setup
+      - test:
+          requires:
+            - build
+      - sonarqube:
+          requires:
+            - test
+      - docker-build:
+          requires:
+            - sonarqube
+      - docker-scan:
+          requires:
+            - docker-build
+      - docker-publish:
+          requires:
+            - docker-scan
