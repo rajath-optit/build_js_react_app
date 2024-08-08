@@ -1,119 +1,86 @@
-@Library('shared-libraries') _
+version: 2.1
 
-pipeline {
-    agent any
-    
-    parameters {
-    
-        string(name: 'GIT_SOURCE_CODE_URL', description: 'Git repository URL for source code')
-        string(name: 'SOURCE_CODE_BRANCH_NAME', description: 'Source Code Branch to build')
-        credentials(name: 'GIT_SOURCE_CODE_CREDENTIAL', description: 'Jenkins credential for source code Git repo', required: true)
-        string(name: 'DOCKER_REPO', description: 'Docker repository')
-        string(name: 'DOCKER_IMAGE_NAME', description: 'Docker image name')
-        string(name: 'DOCKER_IMAGE_TAG', description: 'Docker image tag')
-        credentials(name: 'DOCKER_CREDENTIAL', description: 'Jenkins credential for DockerHub', required: true)
-        string(name: 'SONAR_PROJECT_KEY', description: 'SonarQube project key')
-        string(name: 'SONAR_ORGANIZATION', description: 'SonarQube organization key')
-        string(name: 'SONAR_SOURCES_DIR', description: 'Source code directory for SonarQube analysis')
-        credentials(name: 'SONAR_TOKEN', description: 'SonarQube authentication token', required: true)
-       
-    }
+executors:
+  default:
+    docker:
+      - image: circleci/python:3.8
 
-    stages {
-        stage('Load Scripts') {
-            steps {
-                script {
-                    // Define baseDir for Jenkins shared libraries
-                    def baseDir = "${env.WORKSPACE}/Jenkins/shared-libraries"
+jobs:
+  setup:
+    executor: default
+    steps:
+      - checkout # Check out the main repository with shared libraries
 
-                    // Load scripts using dynamically constructed paths
-                    def loadScript = { type, technology, scriptName ->
-                        def scriptPath = "${baseDir}/${type}/${technology}/${scriptName}.groovy"
-                        return load(scriptPath)
-                    }
+      # Install Java, Groovy, and other dependencies
+      - run:
+          name: Install Java and Groovy
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y openjdk-11-jdk unzip wget
+            wget https://groovy.jfrog.io/artifactory/dist-release-local/groovy-zips/apache-groovy-binary-5.0.0-alpha-9.zip -O groovy.zip
+            sudo unzip groovy.zip -d /opt
+            sudo ln -sf /opt/groovy-5.0.0-alpha-9/bin/groovy /usr/local/bin/groovy
+            sudo chmod +x /opt/groovy-5.0.0-alpha-9/bin/groovy
+            echo 'export GROOVY_HOME=/opt/groovy-5.0.0-alpha-9' >> $BASH_ENV
+            echo 'export PATH=$GROOVY_HOME/bin:$PATH' >> $BASH_ENV
+            source $BASH_ENV
 
-                    // Load scripts from 'vars' directory
-                    gitCheckoutScript = loadScript('vars/common/scm-util', 'git', 'GitCheckout')
-                    sonarScript = loadScript('vars/common', 'codeAnalysis', 'PerformSonarAnalysisForReactjs')
-                    dockerBuildScript = loadScript('vars/common', 'dockerUtil', 'DockerUtil')
-                    dockerPublishScript = loadScript('vars/common', 'containerPublish', 'DockerHubPublish')
-                    dockerScanScript = loadScript('vars/common', 'dockerUtil', 'DockerScan')
-                    // Load scripts from 'src' directory
-                    buildWithNpmScript = loadScript('src/org/common', 'build', 'BuildWithNpm')
-                    unitTestWithNpmScript = loadScript('src/org/common', 'unitTest', 'UnitTestWithNpm')
-                
-                }
-            }
-        }
+      - run:
+          name: Define Environment Variables
+          command: |
+            echo "export GIT_SOURCE_CODE_URL=${GIT_SOURCE_CODE_URL}" >> $BASH_ENV
+            echo "export SOURCE_CODE_BRANCH_NAME=${SOURCE_CODE_BRANCH_NAME}" >> $BASH_ENV
+            echo "export DOCKER_REPO=${DOCKER_REPO}" >> $BASH_ENV
+            echo "export DOCKER_IMAGE_NAME=${DOCKER_IMAGE_NAME}" >> $BASH_ENV
+            echo "export DOCKER_IMAGE_TAG=${DOCKER_IMAGE_TAG}" >> $BASH_ENV
+            echo "export SONAR_PROJECT_KEY=${SONAR_PROJECT_KEY}" >> $BASH_ENV
+            echo "export SONAR_ORGANIZATION=${SONAR_ORGANIZATION}" >> $BASH_ENV
+            echo "export SONAR_SOURCES_DIR=${SONAR_SOURCES_DIR}" >> $BASH_ENV
+            echo "export SONAR_TOKEN=${SONAR_TOKEN}" >> $BASH_ENV
+            source $BASH_ENV
 
-        stage('Git Checkout Source Code Repo') {
-            steps {
-                script {
-                    gitCheckoutScript.gitCheckout(params.SOURCE_CODE_BRANCH_NAME, params.GIT_SOURCE_CODE_URL, params.GIT_SOURCE_CODE_CREDENTIAL)
-                }
-            }
-        }
+      # Define the Groovy scripts location
+      - run:
+          name: Define Groovy Scripts Location
+          command: |
+            echo "export BASE_DIR=${CIRCLE_WORKING_DIRECTORY}/shared-libraries" >> $BASH_ENV
+            source $BASH_ENV
 
-        stage('Build') {
-            steps {
-                script {
-                    // Example usage of loaded build script
-                    buildWithNpmScript.build()
-                }
-            }
-        }
+      # Run the Groovy pipeline
+      - run:
+          name: Run Pipeline with Groovy
+          command: |
+            groovy ${BASE_DIR}/vars/common/scm-util/git/GitCheckout.groovy \
+              --gitSourceCodeUrl ${GIT_SOURCE_CODE_URL} \
+              --sourceCodeBranchName ${SOURCE_CODE_BRANCH_NAME} \
+              --gitSourceCodeCredential ${GIT_SOURCE_CODE_CREDENTIAL}
+              
+            groovy ${BASE_DIR}/src/org/common/build/BuildWithNpm.groovy \
+              --dockerRepo ${DOCKER_REPO} \
+              --dockerImageName ${DOCKER_IMAGE_NAME} \
+              --dockerImageTag ${DOCKER_IMAGE_TAG}
+              
+            groovy ${BASE_DIR}/vars/common/dockerUtil/DockerUtil.groovy \
+              --dockerImageName ${DOCKER_IMAGE_NAME} \
+              --dockerImageTag ${DOCKER_IMAGE_TAG}
+              
+            groovy ${BASE_DIR}/vars/common/containerPublish/DockerHubPublish.groovy \
+              --dockerImageName ${DOCKER_IMAGE_NAME} \
+              --dockerRepo ${DOCKER_REPO} \
+              --dockerImageTag ${DOCKER_IMAGE_TAG} \
+              --dockerCredential ${DOCKER_CREDENTIAL}
+              
+            groovy ${BASE_DIR}/vars/common/dockerUtil/DockerScan.groovy \
+              --dockerImageName ${DOCKER_IMAGE_NAME}
+              
+            groovy ${BASE_DIR}/vars/common/codeAnalysis/PerformSonarAnalysisForReactjs.groovy \
+              --sonarProjectKey ${SONAR_PROJECT_KEY} \
+              --sonarOrganization ${SONAR_ORGANIZATION} \
+              --sonarSourcesDir ${SONAR_SOURCES_DIR} \
+              --sonarToken ${SONAR_TOKEN}
 
-        stage('Unit Test') {
-            steps {
-                script {
-                    // Example usage of loaded test script
-                    unitTestWithNpmScript.unitTest()
-                }
-            }
-        }
-
-        stage('SonarQube Analysis') {
-            steps {
-                script {
-                    sonarScript.performSonarCloudAnalysis(
-                        params.SONAR_PROJECT_KEY, 
-                        params.SONAR_ORGANIZATION, 
-                        params.SONAR_SOURCES_DIR, 
-                        params.SONAR_TOKEN
-                    )
-                }
-            }
-        }
-
-        stage('Docker Build') {
-            steps {
-                script {
-                    dockerBuildScript.dockerBuild(params.DOCKER_IMAGE_NAME, params.DOCKER_IMAGE_TAG)
-                }
-            }
-        }
-
-         stage('Docker Scan') {
-            steps {
-                script {
-                    dockerScanScript.dockerScan(params.DOCKER_IMAGE_NAME)
-                }
-            }
-        }
-
-        stage('Docker Publish') {
-            steps {
-                script {
-                    dockerPublishScript.publishToContainer(params.DOCKER_IMAGE_NAME, params.DOCKER_REPO, params.DOCKER_IMAGE_TAG, params.DOCKER_CREDENTIAL)
-                }
-            }
-        }
-    }
-
-    post {
-        always {
-            // Clean up or post-processing steps, if any
-            echo 'Pipeline execution completed.'
-        }
-    }
-}
+workflows:
+  version: 2
+  build:
+    jobs:
+      - setup
