@@ -1,116 +1,96 @@
 version: 2.1
 
 executors:
-  docker-executor:
+  default:
     docker:
       - image: circleci/python:3.8
-    working_directory: ~/project
 
 jobs:
-  checkout:
-    executor: docker-executor
+  setup:
+    executor: default
     steps:
       - checkout
-      - run:
-          name: Load shared libraries
-          command: |
-            git clone https://github.com/your-org/shared-libraries.git
-            cp -r shared-libraries/* ~/project
 
-  build:
-    executor: docker-executor
-    steps:
-      - checkout
+      # Install required packages
       - run:
-          name: Build with npm
+          name: Install Java and other packages
           command: |
-            npm install
-            npm run build
+            sudo apt-get update
+            sudo apt-get install -y unzip wget openjdk-11-jdk
 
-  unit_test:
-    executor: docker-executor
-    steps:
-      - checkout
+      # Install Groovy
       - run:
-          name: Run unit tests
+          name: Install Groovy
           command: |
-            npm test
+            wget https://groovy.jfrog.io/artifactory/dist-release-local/groovy-zips/apache-groovy-binary-5.0.0-alpha-9.zip -O groovy.zip
+            sudo unzip groovy.zip -d /opt
+            sudo ln -sf /opt/groovy-5.0.0-alpha-9/bin/groovy /usr/local/bin/groovy
+            sudo chmod +x /opt/groovy-5.0.0-alpha-9/bin/groovy
 
-  sonar_analysis:
-    executor: docker-executor
-    steps:
-      - checkout
+      # Set GROOVY_HOME and update PATH environment variable
+      - run:
+          name: Set GROOVY_HOME and PATH
+          command: |
+            echo 'export GROOVY_HOME=/opt/groovy-5.0.0-alpha-9' >> $BASH_ENV
+            echo 'export PATH=$GROOVY_HOME/bin:$PATH' >> $BASH_ENV
+            source $BASH_ENV
+
+      # Verify Groovy installation
+      - run:
+          name: Verify Groovy Installation
+          command: |
+            groovy --version || /opt/groovy-5.0.0-alpha-9/bin/groovy --version
+
+      # Install Node.js and npm
+      - run:
+          name: Install Node.js and npm
+          command: |
+            curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
+            sudo apt-get install -y nodejs
+            node --version
+            npm --version
+
+      # Run Groovy script for build
+      - run:
+          name: Run Build Script
+          command: |
+            groovy Jenkins/shared-libraries/src/org/common/build/BuildWithNpm.groovy
+
+      # Run Groovy script for test
+      - run:
+          name: Run Test Script
+          command: |
+            groovy Jenkins/shared-libraries/src/org/common/unitTest/UnitTestWithNpm.groovy
+
+      # Run Groovy script for SonarQube analysis
       - run:
           name: Run SonarQube Analysis
           command: |
-            sonar-scanner \
-              -Dsonar.projectKey=$SONAR_PROJECT_KEY \
-              -Dsonar.organization=$SONAR_ORGANIZATION \
-              -Dsonar.sources=$SONAR_SOURCES_DIR \
-              -Dsonar.host.url=$SONAR_HOST_URL \
-              -Dsonar.login=$SONAR_TOKEN \
-              | tee sonar-report.txt
-      - run:
-          name: Print SonarQube report
-          command: |
-            echo "=== SonarQube Analysis Report ==="
-            cat sonar-report.txt
-            echo "=== End of SonarQube Analysis Report ==="
+            groovy Jenkins/shared-libraries/vars/common/codeAnalysis/PerformSonarAnalysisForReactjs.groovy
+            
 
-  docker_build:
-    executor: docker-executor
-    steps:
-      - checkout
+      # Build Docker Image
+      - setup_remote_docker:
+          version: 20.10.7
       - run:
-          name: Build Docker image
+          name: Build Docker Image
           command: |
-            docker build -t $DOCKER_IMAGE_NAME:$DOCKER_IMAGE_TAG . | tee docker-build-log.txt
-      - run:
-          name: Print Docker build logs
-          command: |
-            echo "=== Docker Build Logs ==="
-            cat docker-build-log.txt
-            echo "=== End of Docker Build Logs ==="
+            groovy Jenkins/shared-libraries/vars/common/dockerUtil/DockerUtil.groovy
 
-  docker_scan:
-    executor: docker-executor
-    steps:
-      - checkout
+      # Scan Docker Image with Trivy
       - run:
-          name: Run Docker scan
+          name: Scan Docker Image
           command: |
-            docker scan $DOCKER_IMAGE_NAME | tee docker-scan-report.txt
-      - run:
-          name: Print Docker scan report
-          command: |
-            echo "=== Docker Scan Report ==="
-            cat docker-scan-report.txt
-            echo "=== End of Docker Scan Report ==="
+            groovy Jenkins/shared-libraries/vars/common/dockerUtil/DockerScan.groovy
 
-  docker_publish:
-    executor: docker-executor
-    steps:
-      - checkout
+      # Publish Docker Image
       - run:
-          name: Publish Docker image
+          name: Publish Docker Image
           command: |
-            docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD $DOCKER_REGISTRY
-            docker push $DOCKER_IMAGE_NAME:$DOCKER_IMAGE_TAG | tee docker-publish-log.txt
-      - run:
-          name: Print Docker publish logs
-          command: |
-            echo "=== Docker Publish Logs ==="
-            cat docker-publish-log.txt
-            echo "=== End of Docker Publish Logs ==="
+            groovy Jenkins/shared-libraries/vars/common/containerPublish/DockerHubPublish.groovy
 
 workflows:
   version: 2
-  build_and_test:
+  build:
     jobs:
-      - checkout
-      - build
-      - unit_test
-      - sonar_analysis
-      - docker_build
-      - docker_scan
-      - docker_publish
+      - setup
