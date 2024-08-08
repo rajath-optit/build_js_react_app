@@ -54,21 +54,29 @@ jobs:
       - run:
           name: Run Build Script
           command: |
-            groovy Jenkins/shared-libraries/src/org/common/build/BuildWithNpm.groovy | tee build-script.log
+            groovy Jenkins/shared-libraries/src/org/common/build/BuildWithNpm.groovy
 
       # Run Groovy script for test
       - run:
           name: Run Test Script
           command: |
-            groovy Jenkins/shared-libraries/src/org/common/unitTest/UnitTestWithNpm.groovy | tee test-script.log
+            groovy Jenkins/shared-libraries/src/org/common/unitTest/UnitTestWithNpm.groovy
 
-      # Run Groovy script for SonarQube analysis
+      # Run SonarCloud Analysis
       - run:
-          name: Run SonarQube Analysis
+          name: SonarCloud Analysis
           command: |
-            groovy Jenkins/shared-libraries/vars/common/codeAnalysis/PerformSonarAnalysisForReactjs.groovy | tee sonar-analysis.log
-            # Print the location of the SonarQube report if it generates a local file
-            echo "SonarQube analysis completed. Check the SonarQube dashboard for results."
+            wget -qO- https://sonarcloud.io/static/cpp/sonar-scanner-cli-4.6.2.2472-linux.zip | sudo tee /usr/local/bin/sonar-scanner.zip
+            sudo unzip -d /opt/sonar-scanner /usr/local/bin/sonar-scanner.zip
+            sudo ln -sf /opt/sonar-scanner/sonar-scanner-4.6.2.2472-linux/bin/sonar-scanner /usr/local/bin/sonar-scanner
+            sudo chmod +x /usr/local/bin/sonar-scanner
+            sonar-scanner \
+              -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+              -Dsonar.organization=${SONAR_ORGANIZATION} \
+              -Dsonar.sources=${SONAR_SOURCES_DIR} \
+              -Dsonar.java.binaries=${SONAR_BINARIES_DIR} \
+              -Dsonar.host.url=https://sonarcloud.io \
+              -Dsonar.login=${SONAR_TOKEN}
 
       # Build Docker Image
       - setup_remote_docker:
@@ -76,21 +84,19 @@ jobs:
       - run:
           name: Build Docker Image
           command: |
-            groovy Jenkins/shared-libraries/vars/common/dockerUtil/DockerUtil.groovy | tee docker-build.log
+            groovy Jenkins/shared-libraries/vars/common/dockerUtil/DockerUtil.groovy
 
       # Scan Docker Image with Trivy
       - run:
           name: Scan Docker Image
           command: |
-            groovy Jenkins/shared-libraries/vars/common/dockerUtil/DockerScan.groovy | tee docker-scan.log
-            # Print the location of the Docker scan report if it generates a local file
-            echo "Docker scan completed. Check the Trivy scan report for details."
+            groovy Jenkins/shared-libraries/vars/common/dockerUtil/DockerScan.groovy
 
       # Publish Docker Image
       - run:
           name: Publish Docker Image
           command: |
-            groovy Jenkins/shared-libraries/vars/common/containerPublish/DockerHubPublish.groovy | tee docker-publish.log
+            groovy Jenkins/shared-libraries/vars/common/containerPublish/DockerHubPublish.groovy
 
 workflows:
   version: 2
