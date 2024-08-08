@@ -76,7 +76,8 @@ jobs:
               -Dsonar.sources=${SONAR_SOURCES_DIR} \
               -Dsonar.java.binaries=${SONAR_BINARIES_DIR} \
               -Dsonar.host.url=https://sonarcloud.io \
-              -Dsonar.login=${SONAR_TOKEN}
+              -Dsonar.login=${SONAR_TOKEN} \
+              > sonar-scanner.log 2>&1 || (cat sonar-scanner.log && exit 1)
 
       # Build Docker Image
       - setup_remote_docker:
