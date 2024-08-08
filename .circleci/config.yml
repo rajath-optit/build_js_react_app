@@ -87,7 +87,7 @@ jobs:
       - run:
           name: Publish Docker Image
           command: |
-            groovy Jenkins/shared-libraries/src/org/common/docker/PublishDockerImage.groovy
+            groovy Jenkins/shared-libraries/vars/common/containerPublish/DockerHubPublish.groovy
 
 workflows:
   version: 2
