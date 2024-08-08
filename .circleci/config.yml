@@ -81,7 +81,7 @@ jobs:
       - run:
           name: Scan Docker Image
           command: |
-            groovy Jenkins/shared-libraries/src/org/common/docker/ScanDockerImage.groovy
+            groovy Jenkins/shared-libraries/vars/common/dockerUtil/DockerScan.groovy
 
       # Publish Docker Image
       - run:
