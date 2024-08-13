@@ -14,7 +14,7 @@ jobs:
       - run:
           name: Define Groovy Scripts Location
           command: |
-            echo "export BASE_DIR=${CIRCLE_WORKING_DIRECTORY}/shared-libraries" >> $BASH_ENV
+            echo "export BASE_DIR=${CIRCLE_WORKING_DIRECTORY}/Jenkins/shared-libraries" >> $BASH_ENV
             source $BASH_ENV
       - persist_to_workspace:
           root: .
