@@ -88,8 +88,13 @@ jobs:
           name: Run Build Script
           command: |
             mkdir -p reports
-            groovy ${BASE_DIR}/src/org/common/build/BuildWithNpm.groovy > reports/build.log 2>&1
-            cat reports/build.log
+            if [ -f "${BASE_DIR}/src/org/common/build/BuildWithNpm.groovy" ]; then
+                groovy ${BASE_DIR}/src/org/common/build/BuildWithNpm.groovy > reports/build.log 2>&1
+                cat reports/build.log
+            else
+                echo "Error: Groovy script not found at: ${BASE_DIR}/src/org/common/build/BuildWithNpm.groovy"
+                exit 1
+            fi
 
       # Run Groovy script for test
       - run:
