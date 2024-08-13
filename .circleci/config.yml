@@ -16,16 +16,6 @@ jobs:
             echo "export BASE_DIR=${CIRCLE_WORKING_DIRECTORY}/shared-libraries" >> $BASH_ENV
             source $BASH_ENV
 
-      - run:
-          name: Checkout Source Code
-          command: |
-            mkdir -p reports
-            groovy ${BASE_DIR}/vars/common/scm-util/git/GitCheckout.groovy \
-              --gitSourceCodeUrl ${GIT_SOURCE_CODE_URL} \
-              --sourceCodeBranchName ${SOURCE_CODE_BRANCH_NAME} \
-              --gitSourceCodeCredential ${GIT_SOURCE_CODE_CREDENTIAL} > reports/git-checkout.log 2>&1
-            cat reports/git-checkout.log
-
   build:
     executor: default
     steps:
