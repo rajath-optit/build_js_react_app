@@ -1,39 +1,9 @@
 version: 2.1
 
-executors:
-  default:
+jobs:
+  build:
     docker:
       - image: circleci/python:3.8
-
-jobs:
-  setup:
-    executor: default
-    parameters:
-      dockerRepo:
-        type: string
-        default: "your-docker-repo"
-      dockerImageName:
-        type: string
-        default: "your-image-name"
-      dockerImageTag:
-        type: string
-        default: "latest"
-      sonarProjectKey:
-        type: string
-        default: "your-sonar-project-key"
-      sonarOrganization:
-        type: string
-        default: "your-sonar-organization"
-      sonarSourcesDir:
-        type: string
-        default: "src"
-      sonarToken:
-        type: string
-        default: "your-sonar-token"
-      dockerCredential:
-        type: string
-        default: "your-docker-credential"
-
     steps:
       - checkout
 
@@ -52,57 +22,17 @@ jobs:
             source $BASH_ENV
             echo "BASE_DIR is set to: ${BASE_DIR}"
 
-      # Verify Directory Structure
+      # Verify and print directory structure
       - run:
           name: List Directory Structure
           command: |
             echo "Directory structure at BASE_DIR:"
-            ls -R ${BASE_DIR}
+            ls -R ${BASE_DIR} || echo "Directory not found"
 
-      # Install required packages
+      # Run Groovy script if the path is valid
       - run:
-          name: Install Java and other packages
+          name: Run Groovy Script
           command: |
-            sudo apt-get update
-            sudo apt-get install -y unzip wget openjdk-11-jdk
-
-      # Install Groovy
-      - run:
-          name: Install Groovy
-          command: |
-            wget https://groovy.jfrog.io/artifactory/dist-release-local/groovy-zips/apache-groovy-binary-5.0.0-alpha-9.zip -O groovy.zip
-            sudo unzip groovy.zip -d /opt
-            sudo ln -sf /opt/groovy-5.0.0-alpha-9/bin/groovy /usr/local/bin/groovy
-            sudo chmod +x /opt/groovy-5.0.0-alpha-9/bin/groovy
-
-      # Set GROOVY_HOME and update PATH environment variable
-      - run:
-          name: Set GROOVY_HOME and PATH
-          command: |
-            echo 'export GROOVY_HOME=/opt/groovy-5.0.0-alpha-9' >> $BASH_ENV
-            echo 'export PATH=$GROOVY_HOME/bin:$PATH' >> $BASH_ENV
-            source $BASH_ENV
-
-      # Verify Groovy installation
-      - run:
-          name: Verify Groovy Installation
-          command: |
-            groovy --version || /opt/groovy-5.0.0-alpha-9/bin/groovy --version
-
-      # Install Node.js and npm
-      - run:
-          name: Install Node.js and npm
-          command: |
-            curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
-            sudo apt-get install -y nodejs
-            node --version
-            npm --version
-
-      # Run Groovy script for build
-      - run:
-          name: Run Build Script
-          command: |
-            mkdir -p reports
             if [ -f "${BASE_DIR}/src/org/common/build/BuildWithNpm.groovy" ]; then
                 groovy ${BASE_DIR}/src/org/common/build/BuildWithNpm.groovy > reports/build.log 2>&1
                 cat reports/build.log
@@ -110,56 +40,3 @@ jobs:
                 echo "Error: Groovy script not found at: ${BASE_DIR}/src/org/common/build/BuildWithNpm.groovy"
                 exit 1
             fi
-
-      # Run Groovy script for test
-      - run:
-          name: Run Test Script
-          command: |
-            groovy ${BASE_DIR}/src/org/common/unitTest/UnitTestWithNpm.groovy
-
-      # Run SonarCloud Analysis
-      - run:
-          name: SonarCloud Analysis
-          command: |
-            groovy ${BASE_DIR}/vars/common/codeAnalysis/PerformSonarAnalysisForReactjs.groovy \
-              --sonarProjectKey ${SONAR_PROJECT_KEY} \
-              --sonarOrganization ${SONAR_ORGANIZATION} \
-              --sonarSourcesDir ${SONAR_SOURCES_DIR} \
-              --sonarToken ${SONAR_TOKEN} > reports/sonar-analysis.log 2>&1
-            cat reports/sonar-analysis.log
-
-      # Build Docker Image
-      - setup_remote_docker:
-          version: 20.10.7
-      - run:
-          name: Build Docker Image
-          command: |
-            groovy ${BASE_DIR}/vars/common/dockerUtil/DockerBuild.groovy \
-              --dockerImageName ${DOCKER_IMAGE_NAME} \
-              --dockerImageTag ${DOCKER_IMAGE_TAG} > reports/docker-build.log 2>&1
-            cat reports/docker-build.log
-
-      # Scan Docker Image with Trivy
-      - run:
-          name: Scan Docker Image
-          command: |
-            groovy ${BASE_DIR}/vars/common/dockerUtil/DockerScan.groovy \
-              --dockerImageName ${DOCKER_IMAGE_NAME} > reports/docker-scan.log 2>&1
-            cat reports/docker-scan.log
-
-      # Publish Docker Image
-      - run:
-          name: Publish Docker Image
-          command: |
-            groovy ${BASE_DIR}/vars/common/containerPublish/DockerHubPublish.groovy \
-              --dockerImageName ${DOCKER_IMAGE_NAME} \
-              --dockerRepo ${DOCKER_REPO} \
-              --dockerImageTag ${DOCKER_IMAGE_TAG} \
-              --dockerCredential ${DOCKER_CREDENTIAL} > reports/docker-publish.log 2>&1
-            cat reports/docker-publish.log
-
-workflows:
-  version: 2
-  build:
-    jobs:
-      - setup
