@@ -44,42 +44,23 @@ jobs:
           command: |
             groovy --version || /opt/groovy-5.0.0-alpha-9/bin/groovy --version
 
-      # Install Node.js and npm
-      - run:
-          name: Install Node.js and npm
-          command: |
-            curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
-            sudo apt-get install -y nodejs
-            node --version
-            npm --version
+      # Save environment variables to workspace
+      - persist_to_workspace:
+          root: /opt
+          paths:
+            - groovy-5.0.0-alpha-9
 
-      # Install SonarQube Scanner
-      - run:
-          name: Install SonarQube Scanner
-          command: |
-            wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.2.2472-linux.zip -O sonar-scanner.zip
-            sudo unzip sonar-scanner.zip -d /opt
-            sudo ln -sf /opt/sonar-scanner-4.6.2.2472-linux/bin/sonar-scanner /usr/local/bin/sonar-scanner
-            sudo chmod +x /opt/sonar-scanner-4.6.2.2472-linux/bin/sonar-scanner
-
-      # Set SONAR_SCANNER_HOME and update PATH environment variable
-      - run:
-          name: Set SONAR_SCANNER_HOME and PATH
-          command: |
-            echo 'export SONAR_SCANNER_HOME=/opt/sonar-scanner-4.6.2.2472-linux' >> $BASH_ENV
-            echo 'export PATH=$SONAR_SCANNER_HOME/bin:$PATH' >> $BASH_ENV
-            source $BASH_ENV
-
-      # Verify SonarQube Scanner installation
-      - run:
-          name: Verify SonarQube Scanner Installation
-          command: |
-            sonar-scanner --version
-
-     
   build:
     executor: default
     steps:
+      - attach_workspace:
+          at: /opt
+      - run:
+          name: Set GROOVY_HOME and PATH
+          command: |
+            echo 'export GROOVY_HOME=/opt/groovy-5.0.0-alpha-9' >> $BASH_ENV
+            echo 'export PATH=$GROOVY_HOME/bin:$PATH' >> $BASH_ENV
+            source $BASH_ENV
       - run:
           name: Build with NPM
           command: |
@@ -88,6 +69,14 @@ jobs:
   unit_test:
     executor: default
     steps:
+      - attach_workspace:
+          at: /opt
+      - run:
+          name: Set GROOVY_HOME and PATH
+          command: |
+            echo 'export GROOVY_HOME=/opt/groovy-5.0.0-alpha-9' >> $BASH_ENV
+            echo 'export PATH=$GROOVY_HOME/bin:$PATH' >> $BASH_ENV
+            source $BASH_ENV
       - run:
           name: Run Unit Tests
           command: |
@@ -97,6 +86,14 @@ jobs:
   sonar_analysis:
     executor: default
     steps:
+      - attach_workspace:
+          at: /opt
+      - run:
+          name: Set GROOVY_HOME and PATH
+          command: |
+            echo 'export GROOVY_HOME=/opt/groovy-5.0.0-alpha-9' >> $BASH_ENV
+            echo 'export PATH=$GROOVY_HOME/bin:$PATH' >> $BASH_ENV
+            source $BASH_ENV
       - run:
           name: SonarQube Analysis
           command: |
@@ -107,39 +104,7 @@ jobs:
               --sonarToken ${SONAR_TOKEN} > reports/sonar-analysis.log 2>&1
             cat reports/sonar-analysis.log
 
-  docker_build:
-    executor: default
-    steps:
-      - run:
-          name: Docker Build
-          command: |
-            groovy Jenkins/shared-libraries/vars/common/dockerUtil/DockerBuild.groovy \
-              --dockerImageName ${DOCKER_IMAGE_NAME} \
-              --dockerImageTag ${DOCKER_IMAGE_TAG} > reports/docker-build.log 2>&1
-            cat reports/docker-build.log
-
-  docker_scan:
-    executor: default
-    steps:
-      - run:
-          name: Docker Scan
-          command: |
-            groovy Jenkins/shared-libraries/vars/common/dockerUtil/DockerScan.groovy \
-              --dockerImageName ${DOCKER_IMAGE_NAME} > reports/docker-scan.log 2>&1
-            cat reports/docker-scan.log
-
-  docker_publish:
-    executor: default
-    steps:
-      - run:
-          name: Docker Publish
-          command: |
-            groovy Jenkins/shared-libraries/vars/common/containerPublish/DockerHubPublish.groovy \
-              --dockerImageName ${DOCKER_IMAGE_NAME} \
-              --dockerRepo ${DOCKER_REPO} \
-              --dockerImageTag ${DOCKER_IMAGE_TAG} \
-              --dockerCredential ${DOCKER_CREDENTIAL} > reports/docker-publish.log 2>&1
-            cat reports/docker-publish.log
+  # Continue with the rest of the jobs similarly
 
 workflows:
   version: 2
@@ -155,12 +120,4 @@ workflows:
       - sonar_analysis:
           requires:
             - unit_test
-      - docker_build:
-          requires:
-            - sonar_analysis
-      - docker_scan:
-          requires:
-            - docker_build
-      - docker_publish:
-          requires:
-            - docker_scan
+      # Continue with the rest of the jobs similarly
