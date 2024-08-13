@@ -12,10 +12,10 @@ jobs:
       - checkout
 
       - run:
-          name: Install Java and other packages
+          name: Install Basic Utilities and Java
           command: |
             sudo apt-get update
-            sudo apt-get install -y unzip wget openjdk-11-jdk
+            sudo apt-get install -y unzip wget curl openjdk-11-jdk bash
 
       - run:
           name: Install Groovy
@@ -60,7 +60,6 @@ jobs:
           command: |
             wget -qO /tmp/sonar-scanner.zip https://sonarsource.bintray.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.9.2.2747.zip
             sudo unzip /tmp/sonar-scanner.zip -d /opt/sonar-scanner
-            export PATH="$PATH:/opt/sonar-scanner/sonar-scanner-4.9.2.2747/bin"
             sudo ln -sf /opt/sonar-scanner/sonar-scanner-4.9.2.2747/bin/sonar-scanner /usr/local/bin/sonar-scanner
             sudo chmod +x /usr/local/bin/sonar-scanner
 
