@@ -11,62 +11,96 @@ jobs:
     steps:
       - checkout
       
+       # Install required packages
       - run:
           name: Install Java and other packages
           command: |
             sudo apt-get update
             sudo apt-get install -y unzip wget openjdk-11-jdk
 
+      # Install Groovy
       - run:
           name: Install Groovy
           command: |
             wget https://groovy.jfrog.io/artifactory/dist-release-local/groovy-zips/apache-groovy-binary-5.0.0-alpha-9.zip -O groovy.zip
-            mkdir -p $HOME/groovy
-            unzip groovy.zip -d $HOME/groovy
+            sudo unzip groovy.zip -d /opt
+            sudo ln -sf /opt/groovy-5.0.0-alpha-9/bin/groovy /usr/local/bin/groovy
+            sudo chmod +x /opt/groovy-5.0.0-alpha-9/bin/groovy
 
+      # Set GROOVY_HOME and update PATH environment variable
       - run:
           name: Set GROOVY_HOME and PATH
           command: |
-            echo 'export GROOVY_HOME=$HOME/groovy/groovy-5.0.0-alpha-9' >> $BASH_ENV
+            echo 'export GROOVY_HOME=/opt/groovy-5.0.0-alpha-9' >> $BASH_ENV
             echo 'export PATH=$GROOVY_HOME/bin:$PATH' >> $BASH_ENV
             source $BASH_ENV
 
+      # Verify Groovy installation
       - run:
-          name: Check Groovy Installation
+          name: Verify Groovy Installation
           command: |
-            echo "Checking if Groovy is installed correctly..."
-            ls -la /home/circleci/groovy/groovy-5.0.0-alpha-9/bin
-            if [ -f "/home/circleci/groovy/groovy-5.0.0-alpha-9/bin/groovy" ]; then
-              echo "Groovy binary found, ensuring it is executable..."
-              chmod +x /home/circleci/groovy/groovy-5.0.0-alpha-9/bin/groovy
-              /home/circleci/groovy/groovy-5.0.0-alpha-9/bin/groovy --version
-            else
-              echo "Groovy binary not found!"
-              exit 1
-            fi
+            groovy --version || /opt/groovy-5.0.0-alpha-9/bin/groovy --version
 
+      # Install Node.js and npm
+      - run:
+          name: Install Node.js and npm
+          command: |
+            curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
+            sudo apt-get install -y nodejs
+            node --version
+            npm --version
 
-      
+      # Run Groovy script for build
+      - run:
+          name: Run Build Script
+          command: |
+            groovy Jenkins/shared-libraries/src/org/common/build/BuildWithNpm.groovy
 
+      # Run Groovy script for test
+      - run:
+          name: Run Test Script
+          command: |
+            groovy Jenkins/shared-libraries/src/org/common/unitTest/UnitTestWithNpm.groovy
+
+      # Run SonarCloud Analysis
+      - run:
+          name: SonarCloud Analysis
+          command: |
+            wget -qO- https://sonarcloud.io/static/cpp/sonar-scanner-cli-4.6.2.2472-linux.zip | sudo tee /usr/local/bin/sonar-scanner.zip
+            sudo unzip -d /opt/sonar-scanner /usr/local/bin/sonar-scanner.zip
+            sudo ln -sf /opt/sonar-scanner/sonar-scanner-4.6.2.2472-linux/bin/sonar-scanner /usr/local/bin/sonar-scanner
+            sudo chmod +x /usr/local/bin/sonar-scanner
+            sonar-scanner \
+              -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+              -Dsonar.organization=${SONAR_ORGANIZATION} \
+              -Dsonar.sources=${SONAR_SOURCES_DIR} \
+              -Dsonar.java.binaries=${SONAR_BINARIES_DIR} \
+              -Dsonar.host.url=https://sonarcloud.io \
+              -Dsonar.login=${SONAR_TOKEN} \
+              > sonar-scanner.log 2>&1 || (cat sonar-scanner.log && exit 1)
+
+      # Build Docker Image
+      - setup_remote_docker:
+          version: 20.10.7
+      - run:
+          name: Build Docker Image
+          command: |
+            groovy Jenkins/shared-libraries/vars/common/dockerUtil/DockerUtil.groovy
+
+      # Scan Docker Image with Trivy
+      - run:
+          name: Scan Docker Image
+          command: |
+            groovy Jenkins/shared-libraries/vars/common/dockerUtil/DockerScan.groovy
+
+      # Publish Docker Image
+      - run:
+          name: Publish Docker Image
+          command: |
+            groovy Jenkins/shared-libraries/vars/common/containerPublish/DockerHubPublish.groovy
+
+workflows:
+  version: 2
   build:
-    executor: default
-    steps:
-      - attach_workspace:
-          at: $HOME
-      - run:
-          name: Set GROOVY_HOME and PATH
-          command: |
-            echo 'export GROOVY_HOME=$HOME/groovy/groovy-5.0.0-alpha-9' >> $BASH_ENV
-            echo 'export PATH=$GROOVY_HOME/bin:$PATH' >> $BASH_ENV
-            source $BASH_ENV
-
-      - run:
-          name: Verify PATH
-          command: |
-            echo "PATH is: $PATH"
-            which groovy || (echo "Groovy command not found!" && exit 1)
-
-      - run:
-          name: Run Groovy Script
-          command: |
-            groovy Jenkins/shared-libraries/src/org/common/build/BuildWithNpm.groovy | tee build-script.log
+    jobs:
+      - setup
