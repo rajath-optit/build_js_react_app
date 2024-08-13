@@ -12,10 +12,23 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Define Groovy Scripts Location
+          name: Install Groovy
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y openjdk-11-jdk unzip wget
+            wget https://groovy.jfrog.io/artifactory/dist-release-local/groovy-zips/apache-groovy-binary-5.0.0-alpha-9.zip -O groovy.zip
+            sudo unzip groovy.zip -d /opt
+            sudo ln -sf /opt/groovy-5.0.0-alpha-9/bin/groovy /usr/local/bin/groovy
+            sudo chmod +x /opt/groovy-5.0.0-alpha-9/bin/groovy
+      - run:
+          name: Check Groovy Installation
+          command: |
+            groovy --version
+      - run:
+          name: Define Base Directory
           command: |
             echo "export BASE_DIR=${CIRCLE_WORKING_DIRECTORY}/build_js_react_app/Jenkins/shared-libraries" >> $BASH_ENV
-            echo "BASE_DIR is set to: ${BASE_DIR}"
+            echo "BASE_DIR is set to: ${BASE_DIR}" >> $BASH_ENV
             source $BASH_ENV
       - persist_to_workspace:
           root: .
@@ -28,6 +41,15 @@ jobs:
     steps:
       - attach_workspace:
           at: .
+      - run:
+          name: Check Groovy Installation
+          command: |
+            groovy --version
+      - run:
+          name: Debug Path
+          command: |
+            echo "BASE_DIR is set to: ${BASE_DIR}"
+            ls -l ${BASE_DIR}/src/org/common/build/BuildWithNpm.groovy
       - run:
           name: Build with NPM
           command: |
@@ -48,7 +70,6 @@ jobs:
       - run:
           name: Run Unit Tests
           command: |
-            mkdir -p reports
             groovy ${BASE_DIR}/vars/common/test/RunUnitTests.groovy > reports/unit-test.log 2>&1
             cat reports/unit-test.log
       - persist_to_workspace:
@@ -65,7 +86,6 @@ jobs:
       - run:
           name: SonarQube Analysis
           command: |
-            mkdir -p reports
             groovy ${BASE_DIR}/vars/common/codeAnalysis/PerformSonarAnalysisForReactjs.groovy \
               --sonarProjectKey ${SONAR_PROJECT_KEY} \
               --sonarOrganization ${SONAR_ORGANIZATION} \
@@ -86,7 +106,6 @@ jobs:
       - run:
           name: Docker Build
           command: |
-            mkdir -p reports
             groovy ${BASE_DIR}/vars/common/dockerUtil/DockerBuild.groovy \
               --dockerImageName ${DOCKER_IMAGE_NAME} \
               --dockerImageTag ${DOCKER_IMAGE_TAG} > reports/docker-build.log 2>&1
@@ -105,7 +124,6 @@ jobs:
       - run:
           name: Docker Scan
           command: |
-            mkdir -p reports
             groovy ${BASE_DIR}/vars/common/dockerUtil/DockerScan.groovy \
               --dockerImageName ${DOCKER_IMAGE_NAME} > reports/docker-scan.log 2>&1
             cat reports/docker-scan.log
@@ -123,7 +141,6 @@ jobs:
       - run:
           name: Docker Publish
           command: |
-            mkdir -p reports
             groovy ${BASE_DIR}/vars/common/containerPublish/DockerHubPublish.groovy \
               --dockerImageName ${DOCKER_IMAGE_NAME} \
               --dockerRepo ${DOCKER_REPO} \
