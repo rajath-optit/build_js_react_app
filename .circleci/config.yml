@@ -14,6 +14,13 @@ jobs:
             echo "Current working directory:"
             pwd
 
+      # Print the directory structure of the checkout directory
+      - run:
+          name: List Checkout Directory Structure
+          command: |
+            echo "Directory structure at checkout:"
+            ls -R ${CIRCLE_WORKING_DIRECTORY}
+
       # Set BASE_DIR environment variable
       - run:
           name: Set BASE_DIR
@@ -24,16 +31,18 @@ jobs:
 
       # List the directory structure at BASE_DIR
       - run:
-          name: List Directory Structure
+          name: List Directory Structure at BASE_DIR
           command: |
             echo "Directory structure at BASE_DIR:"
             ls -R ${BASE_DIR} || echo "Directory not found"
+
       # Install required packages
       - run:
           name: Install Java and other packages
           command: |
             sudo apt-get update
             sudo apt-get install -y unzip wget openjdk-11-jdk
+
       # Install Groovy
       - run:
           name: Install Groovy
