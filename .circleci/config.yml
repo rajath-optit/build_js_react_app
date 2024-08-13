@@ -58,35 +58,34 @@ jobs:
       - run:
           name: Install SonarScanner
           command: |
-          #!/bin/bash -eo pipefail
-          # Download SonarScanner
-          wget -qO /tmp/sonar-scanner.zip https://sonarcloud.io/static/cpp/sonar-scanner-cli-4.6.2.2472-linux.zip
-          
-          # Verify the download
-          ls -lh /tmp/sonar-scanner.zip
-          file /tmp/sonar-scanner.zip
-          
-          # Inspect the ZIP file contents
-          unzip -l /tmp/sonar-scanner.zip
-          
-          # Create directory for SonarScanner
-          sudo mkdir -p /opt/sonar-scanner
-          
-          # Unzip the file with detailed output
-          sudo unzip -d /opt/sonar-scanner /tmp/sonar-scanner.zip || {
-            echo "Unzip failed. Check if /tmp/sonar-scanner.zip is a valid ZIP file."
-            exit 1
-          }
-          
-          # Check contents of the target directory
-          ls -lh /opt/sonar-scanner
-          
-          # Create symbolic link and set permissions
-          sudo ln -sf /opt/sonar-scanner/sonar-scanner-4.6.2.2472-linux/bin/sonar-scanner /usr/local/bin/sonar-scanner
-          sudo chmod +x /usr/local/bin/sonar-scanner
-
-          # Verify installation
-          sonar-scanner --version
+            # Download SonarScanner
+            wget -qO /tmp/sonar-scanner.zip https://sonarcloud.io/static/cpp/sonar-scanner-cli-4.6.2.2472-linux.zip
+            
+            # Verify the download
+            ls -lh /tmp/sonar-scanner.zip
+            file /tmp/sonar-scanner.zip
+            
+            # Inspect the ZIP file contents
+            unzip -l /tmp/sonar-scanner.zip
+            
+            # Create directory for SonarScanner
+            sudo mkdir -p /opt/sonar-scanner
+            
+            # Unzip the file with detailed output
+            sudo unzip -d /opt/sonar-scanner /tmp/sonar-scanner.zip || {
+              echo "Unzip failed. Check if /tmp/sonar-scanner.zip is a valid ZIP file."
+              exit 1
+            }
+            
+            # Check contents of the target directory
+            ls -lh /opt/sonar-scanner
+            
+            # Create symbolic link and set permissions
+            sudo ln -sf /opt/sonar-scanner/sonar-scanner-4.6.2.2472-linux/bin/sonar-scanner /usr/local/bin/sonar-scanner
+            sudo chmod +x /usr/local/bin/sonar-scanner
+            
+            # Verify installation
+            sonar-scanner --version
 
       - run:
           name: Run SonarScanner
