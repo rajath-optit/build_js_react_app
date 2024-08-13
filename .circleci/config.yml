@@ -50,8 +50,7 @@ jobs:
             sudo unzip groovy.zip -d /opt
             sudo ln -sf /opt/groovy-5.0.0-alpha-9/bin/groovy /usr/local/bin/groovy
             sudo chmod +x /opt/groovy-5.0.0-alpha-9/bin/groovy
-
-      # Set GROOVY_HOME and update PATH environment variable
+ # Set GROOVY_HOME and update PATH environment variable
       - run:
           name: Set GROOVY_HOME and PATH
           command: |
@@ -65,19 +64,27 @@ jobs:
           command: |
             groovy --version || /opt/groovy-5.0.0-alpha-9/bin/groovy --version
 
-      # Check for the Groovy script and run it if it exists
+      # Install Node.js and npm
       - run:
-          name: Run Groovy Script
+          name: Install Node.js and npm
           command: |
-            if [ -f "${BASE_DIR}/src/org/common/build/BuildWithNpm.groovy" ]; then
-                echo "Groovy script found. Running the script..."
-                mkdir -p reports  # Create the reports directory if it doesn't exist
-                groovy ${BASE_DIR}/src/org/common/build/BuildWithNpm.groovy > reports/build.log 2>&1
-                cat reports/build.log
-            else
-                echo "Error: Groovy script not found at: ${BASE_DIR}/src/org/common/build/BuildWithNpm.groovy"
-                exit 1
-            fi
+            curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
+            sudo apt-get install -y nodejs
+            node --version
+            npm --version
+
+      # Run Groovy script for build
+      - run:
+          name: Run Build Script
+          command: |
+            groovy Jenkins/shared-libraries/src/org/common/build/BuildWithNpm.groovy | tee build-script.log
+
+      # Run Groovy script for test
+      - run:
+          name: Run Test Script
+          command: |
+            groovy Jenkins/shared-libraries/src/org/common/unitTest/UnitTestWithNpm.groovy | tee test-script.log
+
 
 workflows:
   version: 2
