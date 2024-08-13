@@ -1,93 +1,119 @@
 version: 2.1
 
-jobs:
-  build:
+executors:
+  default:
     docker:
-      - image: circleci/python:3.8  # Choose the appropriate Docker image for your environment
+      - image: circleci/python:3.8
+
+jobs:
+  git_checkout:
+    executor: default
     steps:
-      - checkout  # Check out the source code
-
-      # Print environment variables
+      - checkout
       - run:
-          name: Print Environment Variables
+          name: Define Groovy Scripts Location
           command: |
-            printenv
-
-      # Print the directory structure at the default location
-      - run:
-          name: List Directory Structure at Default Directory
-          command: |
-            echo "Directory structure at /home/circleci/project:"
-            ls -R /home/circleci/project || echo "Directory not found"
-
-      # Set BASE_DIR environment variable
-      - run:
-          name: Set BASE_DIR
-          command: |
-            echo "export BASE_DIR=/home/circleci/project/build_js_react_app/Jenkins/shared-libraries" >> $BASH_ENV
-            source $BASH_ENV
-            echo "BASE_DIR is set to: ${BASE_DIR}"
-
-      # List the directory structure at BASE_DIR
-      - run:
-          name: List Directory Structure at BASE_DIR
-          command: |
-            echo "Directory structure at BASE_DIR:"
-            ls -R ${BASE_DIR} || echo "Directory not found"
-
-      # Install required packages
-      - run:
-          name: Install Java and other packages
-          command: |
-            sudo apt-get update
-            sudo apt-get install -y unzip wget openjdk-11-jdk
-
-      # Install Groovy
-      - run:
-          name: Install Groovy
-          command: |
-            wget https://groovy.jfrog.io/artifactory/dist-release-local/groovy-zips/apache-groovy-binary-5.0.0-alpha-9.zip -O groovy.zip
-            sudo unzip groovy.zip -d /opt
-            sudo ln -sf /opt/groovy-5.0.0-alpha-9/bin/groovy /usr/local/bin/groovy
-            sudo chmod +x /opt/groovy-5.0.0-alpha-9/bin/groovy
- # Set GROOVY_HOME and update PATH environment variable
-      - run:
-          name: Set GROOVY_HOME and PATH
-          command: |
-            echo 'export GROOVY_HOME=/opt/groovy-5.0.0-alpha-9' >> $BASH_ENV
-            echo 'export PATH=$GROOVY_HOME/bin:$PATH' >> $BASH_ENV
+            echo "export BASE_DIR=${CIRCLE_WORKING_DIRECTORY}/shared-libraries" >> $BASH_ENV
             source $BASH_ENV
 
-      # Verify Groovy installation
       - run:
-          name: Verify Groovy Installation
+          name: Checkout Source Code
           command: |
-            groovy --version || /opt/groovy-5.0.0-alpha-9/bin/groovy --version
+            mkdir -p reports
+            groovy ${BASE_DIR}/vars/common/scm-util/git/GitCheckout.groovy \
+              --gitSourceCodeUrl ${GIT_SOURCE_CODE_URL} \
+              --sourceCodeBranchName ${SOURCE_CODE_BRANCH_NAME} \
+              --gitSourceCodeCredential ${GIT_SOURCE_CODE_CREDENTIAL} > reports/git-checkout.log 2>&1
+            cat reports/git-checkout.log
 
-      # Install Node.js and npm
+  build:
+    executor: default
+    steps:
       - run:
-          name: Install Node.js and npm
+          name: Build with NPM
           command: |
-            curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
-            sudo apt-get install -y nodejs
-            node --version
-            npm --version
+            groovy ${BASE_DIR}/src/org/common/build/BuildWithNpm.groovy \
+              --dockerRepo ${DOCKER_REPO} \
+              --dockerImageName ${DOCKER_IMAGE_NAME} \
+              --dockerImageTag ${DOCKER_IMAGE_TAG} > reports/build.log 2>&1
+            cat reports/build.log
 
-      # Run Groovy script for build
+  unit_test:
+    executor: default
+    steps:
       - run:
-          name: Run Build Script
+          name: Run Unit Tests
           command: |
-            groovy Jenkins/shared-libraries/src/org/common/build/BuildWithNpm.groovy | tee build-script.log
+            groovy ${BASE_DIR}/vars/common/test/RunUnitTests.groovy > reports/unit-test.log 2>&1
+            cat reports/unit-test.log
 
-      # Run Groovy script for test
+  sonar_analysis:
+    executor: default
+    steps:
       - run:
-          name: Run Test Script
+          name: SonarQube Analysis
           command: |
-            groovy Jenkins/shared-libraries/src/org/common/unitTest/UnitTestWithNpm.groovy | tee test-script.log
+            groovy ${BASE_DIR}/vars/common/codeAnalysis/PerformSonarAnalysisForReactjs.groovy \
+              --sonarProjectKey ${SONAR_PROJECT_KEY} \
+              --sonarOrganization ${SONAR_ORGANIZATION} \
+              --sonarSourcesDir ${SONAR_SOURCES_DIR} \
+              --sonarToken ${SONAR_TOKEN} > reports/sonar-analysis.log 2>&1
+            cat reports/sonar-analysis.log
 
+  docker_build:
+    executor: default
+    steps:
+      - run:
+          name: Docker Build
+          command: |
+            groovy ${BASE_DIR}/vars/common/dockerUtil/DockerBuild.groovy \
+              --dockerImageName ${DOCKER_IMAGE_NAME} \
+              --dockerImageTag ${DOCKER_IMAGE_TAG} > reports/docker-build.log 2>&1
+            cat reports/docker-build.log
+
+  docker_scan:
+    executor: default
+    steps:
+      - run:
+          name: Docker Scan
+          command: |
+            groovy ${BASE_DIR}/vars/common/dockerUtil/DockerScan.groovy \
+              --dockerImageName ${DOCKER_IMAGE_NAME} > reports/docker-scan.log 2>&1
+            cat reports/docker-scan.log
+
+  docker_publish:
+    executor: default
+    steps:
+      - run:
+          name: Docker Publish
+          command: |
+            groovy ${BASE_DIR}/vars/common/containerPublish/DockerHubPublish.groovy \
+              --dockerImageName ${DOCKER_IMAGE_NAME} \
+              --dockerRepo ${DOCKER_REPO} \
+              --dockerImageTag ${DOCKER_IMAGE_TAG} \
+              --dockerCredential ${DOCKER_CREDENTIAL} > reports/docker-publish.log 2>&1
+            cat reports/docker-publish.log
 
 workflows:
   version: 2
-  build:
+  build_and_deploy:
     jobs:
-      - build
+      - git_checkout
+      - build:
+          requires:
+            - git_checkout
+      - unit_test:
+          requires:
+            - build
+      - sonar_analysis:
+          requires:
+            - unit_test
+      - docker_build:
+          requires:
+            - sonar_analysis
+      - docker_scan:
+          requires:
+            - docker_build
+      - docker_publish:
+          requires:
+            - docker_scan
