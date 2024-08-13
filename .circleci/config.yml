@@ -28,6 +28,12 @@ jobs:
           command: |
             echo "Directory structure at BASE_DIR:"
             ls -R ${BASE_DIR} || echo "Directory not found"
+      # Install required packages
+      - run:
+          name: Install Java and other packages
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y unzip wget openjdk-11-jdk
       # Install Groovy
       - run:
           name: Install Groovy
