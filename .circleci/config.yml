@@ -37,6 +37,28 @@ jobs:
     steps:
       - checkout
 
+      # Print working directory
+      - run:
+          name: Print Working Directory
+          command: |
+            echo "Current working directory:"
+            pwd
+
+      # Set BASE_DIR environment variable
+      - run:
+          name: Set BASE_DIR
+          command: |
+            echo "export BASE_DIR=${CIRCLE_WORKING_DIRECTORY}/build_js_react_app/Jenkins/shared-libraries" >> $BASH_ENV
+            source $BASH_ENV
+            echo "BASE_DIR is set to: ${BASE_DIR}"
+
+      # Verify Directory Structure
+      - run:
+          name: List Directory Structure
+          command: |
+            echo "Directory structure at BASE_DIR:"
+            ls -R ${BASE_DIR}
+
       # Install required packages
       - run:
           name: Install Java and other packages
@@ -59,14 +81,7 @@ jobs:
           command: |
             echo 'export GROOVY_HOME=/opt/groovy-5.0.0-alpha-9' >> $BASH_ENV
             echo 'export PATH=$GROOVY_HOME/bin:$PATH' >> $BASH_ENV
-
-      # Set BASE_DIR environment variable
-      - run:
-          name: Set BASE_DIR
-          command: |
-            echo "export BASE_DIR=${CIRCLE_WORKING_DIRECTORY}/build_js_react_app/Jenkins/shared-libraries" >> $BASH_ENV
             source $BASH_ENV
-            echo "BASE_DIR is set to: ${BASE_DIR}"
 
       # Verify Groovy installation
       - run:
