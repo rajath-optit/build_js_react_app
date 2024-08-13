@@ -10,11 +10,7 @@ jobs:
     executor: default
     steps:
       - checkout
-      - run:
-          name: Define Groovy Scripts Location
-          command: |
-            echo "export BASE_DIR=${CIRCLE_WORKING_DIRECTORY}/shared-libraries" >> $BASH_ENV
-            source $BASH_ENV
+      
       - run:
           name: Install Java and other packages
           command: |
@@ -50,10 +46,7 @@ jobs:
             fi
 
 
-      - persist_to_workspace:
-          root: $HOME
-          paths:
-            - groovy
+      
 
   build:
     executor: default
