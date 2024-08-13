@@ -56,24 +56,19 @@ jobs:
             groovy Jenkins/shared-libraries/src/org/common/unitTest/UnitTestWithNpm.groovy
 
       - run:
-          name: SonarCloud Analysis
+          name: Install SonarScanner
           command: |
-            # Download SonarScanner ZIP
             wget -qO /tmp/sonar-scanner.zip https://sonarcloud.io/static/cpp/sonar-scanner-cli-4.6.2.2472-linux.zip
-            
-            # Create directory for SonarScanner
             sudo mkdir -p /opt/sonar-scanner
-            
-            # Unzip SonarScanner
             sudo unzip /tmp/sonar-scanner.zip -d /opt/sonar-scanner
-            
-            # Create symbolic link to SonarScanner executable
             sudo ln -sf /opt/sonar-scanner/sonar-scanner-4.6.2.2472-linux/bin/sonar-scanner /usr/local/bin/sonar-scanner
-            
-            # Ensure SonarScanner is executable
             sudo chmod +x /usr/local/bin/sonar-scanner
-            
-            # Run SonarScanner
+            echo 'export PATH=$PATH:/opt/sonar-scanner/sonar-scanner-4.6.2.2472-linux/bin' >> $BASH_ENV
+            source $BASH_ENV
+
+      - run:
+          name: Run SonarScanner
+          command: |
             sonar-scanner \
               -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
               -Dsonar.organization=${SONAR_ORGANIZATION} \
