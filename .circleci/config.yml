@@ -7,25 +7,24 @@ jobs:
     steps:
       - checkout  # Check out the source code
 
-      # Print the current working directory
+      # Print environment variables
       - run:
-          name: Print Working Directory
+          name: Print Environment Variables
           command: |
-            echo "Current working directory:"
-            pwd
+            printenv
 
-      # Print the directory structure of the checkout directory
+      # Print the directory structure at the default location
       - run:
-          name: List Checkout Directory Structure
+          name: List Directory Structure at Default Directory
           command: |
-            echo "Directory structure at checkout:"
-            ls -R ${CIRCLE_WORKING_DIRECTORY}
+            echo "Directory structure at /home/circleci/project:"
+            ls -R /home/circleci/project || echo "Directory not found"
 
       # Set BASE_DIR environment variable
       - run:
           name: Set BASE_DIR
           command: |
-            echo "export BASE_DIR=${CIRCLE_WORKING_DIRECTORY}/build_js_react_app/Jenkins/shared-libraries" >> $BASH_ENV
+            echo "export BASE_DIR=/home/circleci/project/build_js_react_app/Jenkins/shared-libraries" >> $BASH_ENV
             source $BASH_ENV
             echo "BASE_DIR is set to: ${BASE_DIR}"
 
