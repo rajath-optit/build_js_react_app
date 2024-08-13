@@ -6,7 +6,8 @@ executors:
       - image: circleci/python:3.8
 
 jobs:
-  git_checkout:
+  # Checkout and prepare the workspace
+  prepare:
     executor: default
     steps:
       - checkout
@@ -15,44 +16,53 @@ jobs:
           command: |
             echo "export BASE_DIR=${CIRCLE_WORKING_DIRECTORY}/shared-libraries" >> $BASH_ENV
             source $BASH_ENV
+      - persist_to_workspace:
+          root: .
+          paths:
+            - .
 
-      - run:
-          name: Checkout Source Code
-          command: |
-            mkdir -p reports
-            groovy ${BASE_DIR}/vars/common/scm-util/git/GitCheckout.groovy \
-              --gitSourceCodeUrl ${GIT_SOURCE_CODE_URL} \
-              --sourceCodeBranchName ${SOURCE_CODE_BRANCH_NAME} \
-              --gitSourceCodeCredential ${GIT_SOURCE_CODE_CREDENTIAL} > reports/git-checkout.log 2>&1
-            cat reports/git-checkout.log
-
+  # Build with NPM
   build:
     executor: default
     steps:
-      - checkout
+      - attach_workspace:
+          at: .
       - run:
           name: Build with NPM
           command: |
+            mkdir -p reports
             groovy ${BASE_DIR}/src/org/common/build/BuildWithNpm.groovy \
               --dockerRepo ${DOCKER_REPO} \
               --dockerImageName ${DOCKER_IMAGE_NAME} \
               --dockerImageTag ${DOCKER_IMAGE_TAG} > reports/build.log 2>&1
             cat reports/build.log
+      - persist_to_workspace:
+          root: .
+          paths:
+            - .
 
+  # Run Unit Tests
   unit_test:
     executor: default
     steps:
-      - checkout
+      - attach_workspace:
+          at: .
       - run:
           name: Run Unit Tests
           command: |
             groovy ${BASE_DIR}/vars/common/test/RunUnitTests.groovy > reports/unit-test.log 2>&1
             cat reports/unit-test.log
+      - persist_to_workspace:
+          root: .
+          paths:
+            - .
 
+  # SonarQube Analysis
   sonar_analysis:
     executor: default
     steps:
-      - checkout
+      - attach_workspace:
+          at: .
       - run:
           name: SonarQube Analysis
           command: |
@@ -62,11 +72,17 @@ jobs:
               --sonarSourcesDir ${SONAR_SOURCES_DIR} \
               --sonarToken ${SONAR_TOKEN} > reports/sonar-analysis.log 2>&1
             cat reports/sonar-analysis.log
+      - persist_to_workspace:
+          root: .
+          paths:
+            - .
 
+  # Docker Build
   docker_build:
     executor: default
     steps:
-      - checkout
+      - attach_workspace:
+          at: .
       - run:
           name: Docker Build
           command: |
@@ -74,22 +90,34 @@ jobs:
               --dockerImageName ${DOCKER_IMAGE_NAME} \
               --dockerImageTag ${DOCKER_IMAGE_TAG} > reports/docker-build.log 2>&1
             cat reports/docker-build.log
+      - persist_to_workspace:
+          root: .
+          paths:
+            - .
 
+  # Docker Scan
   docker_scan:
     executor: default
     steps:
-      - checkout
+      - attach_workspace:
+          at: .
       - run:
           name: Docker Scan
           command: |
             groovy ${BASE_DIR}/vars/common/dockerUtil/DockerScan.groovy \
               --dockerImageName ${DOCKER_IMAGE_NAME} > reports/docker-scan.log 2>&1
             cat reports/docker-scan.log
+      - persist_to_workspace:
+          root: .
+          paths:
+            - .
 
+  # Docker Publish
   docker_publish:
     executor: default
     steps:
-      - checkout
+      - attach_workspace:
+          at: .
       - run:
           name: Docker Publish
           command: |
@@ -104,7 +132,10 @@ workflows:
   version: 2
   build_and_deploy:
     jobs:
-      
+      - prepare
+      - build:
+          requires:
+            - prepare
       - unit_test:
           requires:
             - build
