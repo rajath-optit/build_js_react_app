@@ -12,14 +12,10 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Print Checkout Path
-          command: |
-            echo "The current checkout path is: ${CIRCLE_WORKING_DIRECTORY}"
-      - run:
           name: Define Groovy Scripts Location
           command: |
-            echo "export BASE_DIR=${CIRCLE_WORKING_DIRECTORY}/Jenkins/shared-libraries" >> $BASH_ENV
-            echo "BASE_DIR is set to: ${CIRCLE_WORKING_DIRECTORY}/Jenkins/shared-libraries"
+            echo "export BASE_DIR=${CIRCLE_WORKING_DIRECTORY}/build_js_react_app/Jenkins/shared-libraries" >> $BASH_ENV
+            echo "BASE_DIR is set to: ${BASE_DIR}"
             source $BASH_ENV
       - persist_to_workspace:
           root: .
@@ -36,8 +32,8 @@ jobs:
           name: Build with NPM
           command: |
             mkdir -p reports
-            groovy ${BASE_DIR}/src/org/common/build/BuildWithNpm.groovy
-              
+            groovy ${BASE_DIR}/src/org/common/build/BuildWithNpm.groovy > reports/build.log 2>&1
+            cat reports/build.log
       - persist_to_workspace:
           root: .
           paths:
@@ -52,6 +48,7 @@ jobs:
       - run:
           name: Run Unit Tests
           command: |
+            mkdir -p reports
             groovy ${BASE_DIR}/vars/common/test/RunUnitTests.groovy > reports/unit-test.log 2>&1
             cat reports/unit-test.log
       - persist_to_workspace:
@@ -68,6 +65,7 @@ jobs:
       - run:
           name: SonarQube Analysis
           command: |
+            mkdir -p reports
             groovy ${BASE_DIR}/vars/common/codeAnalysis/PerformSonarAnalysisForReactjs.groovy \
               --sonarProjectKey ${SONAR_PROJECT_KEY} \
               --sonarOrganization ${SONAR_ORGANIZATION} \
@@ -88,6 +86,7 @@ jobs:
       - run:
           name: Docker Build
           command: |
+            mkdir -p reports
             groovy ${BASE_DIR}/vars/common/dockerUtil/DockerBuild.groovy \
               --dockerImageName ${DOCKER_IMAGE_NAME} \
               --dockerImageTag ${DOCKER_IMAGE_TAG} > reports/docker-build.log 2>&1
@@ -106,6 +105,7 @@ jobs:
       - run:
           name: Docker Scan
           command: |
+            mkdir -p reports
             groovy ${BASE_DIR}/vars/common/dockerUtil/DockerScan.groovy \
               --dockerImageName ${DOCKER_IMAGE_NAME} > reports/docker-scan.log 2>&1
             cat reports/docker-scan.log
@@ -123,6 +123,7 @@ jobs:
       - run:
           name: Docker Publish
           command: |
+            mkdir -p reports
             groovy ${BASE_DIR}/vars/common/containerPublish/DockerHubPublish.groovy \
               --dockerImageName ${DOCKER_IMAGE_NAME} \
               --dockerRepo ${DOCKER_REPO} \
