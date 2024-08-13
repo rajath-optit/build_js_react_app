@@ -11,14 +11,12 @@ jobs:
     steps:
       - checkout
       
-      # Install required packages
       - run:
           name: Install Java and other packages
           command: |
             sudo apt-get update
             sudo apt-get install -y unzip wget openjdk-11-jdk
 
-      # Install Groovy
       - run:
           name: Install Groovy
           command: |
@@ -27,7 +25,6 @@ jobs:
             sudo ln -sf /opt/groovy-5.0.0-alpha-9/bin/groovy /usr/local/bin/groovy
             sudo chmod +x /opt/groovy-5.0.0-alpha-9/bin/groovy
 
-      # Set GROOVY_HOME and update PATH environment variable
       - run:
           name: Set GROOVY_HOME and PATH
           command: |
@@ -35,13 +32,11 @@ jobs:
             echo 'export PATH=$GROOVY_HOME/bin:$PATH' >> $BASH_ENV
             source $BASH_ENV
 
-      # Verify Groovy installation
       - run:
           name: Verify Groovy Installation
           command: |
             groovy --version || /opt/groovy-5.0.0-alpha-9/bin/groovy --version
 
-      # Install Node.js and npm
       - run:
           name: Install Node.js and npm
           command: |
@@ -50,19 +45,16 @@ jobs:
             node --version
             npm --version
 
-      # Run Groovy script for build
       - run:
           name: Run Build Script
           command: |
             groovy Jenkins/shared-libraries/src/org/common/build/BuildWithNpm.groovy
 
-      # Run Groovy script for test
       - run:
           name: Run Test Script
           command: |
             groovy Jenkins/shared-libraries/src/org/common/unitTest/UnitTestWithNpm.groovy
 
-      # Run SonarCloud Analysis
       - run:
           name: SonarCloud Analysis
           command: |
@@ -79,21 +71,19 @@ jobs:
               -Dsonar.login=${SONAR_TOKEN} \
               > sonar-scanner.log 2>&1 || (cat sonar-scanner.log && exit 1)
 
-      # Build Docker Image
       - setup_remote_docker:
           version: 20.10.7
+
       - run:
           name: Build Docker Image
           command: |
             groovy Jenkins/shared-libraries/vars/common/dockerUtil/DockerUtil.groovy
 
-      # Scan Docker Image with Trivy
       - run:
           name: Scan Docker Image
           command: |
             groovy Jenkins/shared-libraries/vars/common/dockerUtil/DockerScan.groovy
 
-      # Publish Docker Image
       - run:
           name: Publish Docker Image
           command: |
@@ -103,4 +93,4 @@ workflows:
   version: 2
   build:
     jobs:
-      - setup
+      - git_checkout
