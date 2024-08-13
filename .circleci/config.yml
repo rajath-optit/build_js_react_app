@@ -76,25 +76,14 @@ jobs:
           command: |
             sonar-scanner --version
 
-      # Run Groovy script for build
-      - run:
-          name: Run Build Script
-          command: |
-            groovy Jenkins/shared-libraries/src/org/common/build/BuildWithNpm.groovy | tee build-script.log
-
-      # Run Groovy script for test
-      - run:
-          name: Run Test Script
-          command: |
-            groovy Jenkins/shared-libraries/src/org/common/unitTest/UnitTestWithNpm.groovy | tee test-script.log
-
+     
   build:
     executor: default
     steps:
       - run:
           name: Build with NPM
           command: |
-             groovy Jenkins/shared-libraries/src/org/common/build/BuildWithNpm.groovy | tee build-script.log
+            groovy Jenkins/shared-libraries/src/org/common/build/BuildWithNpm.groovy | tee build-script.log
 
   unit_test:
     executor: default
@@ -102,7 +91,7 @@ jobs:
       - run:
           name: Run Unit Tests
           command: |
-             groovy Jenkins/shared-libraries/src/org/common/unitTest/UnitTestWithNpm.groovy | tee test-script.log.log 2>&1
+            groovy Jenkins/shared-libraries/src/org/common/unitTest/UnitTestWithNpm.groovy | tee test-script.log
             cat reports/unit-test.log
 
   sonar_analysis:
