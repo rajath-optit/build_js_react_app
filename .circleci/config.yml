@@ -3,11 +3,11 @@ version: 2.1
 jobs:
   build:
     docker:
-      - image: circleci/python:3.8
+      - image: circleci/python:3.8  # Choose the appropriate Docker image for your environment
     steps:
-      - checkout
+      - checkout  # Check out the source code
 
-      # Print working directory
+      # Print the current working directory
       - run:
           name: Print Working Directory
           command: |
@@ -22,21 +22,29 @@ jobs:
             source $BASH_ENV
             echo "BASE_DIR is set to: ${BASE_DIR}"
 
-      # Verify and print directory structure
+      # List the directory structure at BASE_DIR
       - run:
           name: List Directory Structure
           command: |
             echo "Directory structure at BASE_DIR:"
             ls -R ${BASE_DIR} || echo "Directory not found"
 
-      # Run Groovy script if the path is valid
+      # Check for the Groovy script and run it if it exists
       - run:
           name: Run Groovy Script
           command: |
             if [ -f "${BASE_DIR}/src/org/common/build/BuildWithNpm.groovy" ]; then
+                echo "Groovy script found. Running the script..."
+                mkdir -p reports  # Create the reports directory if it doesn't exist
                 groovy ${BASE_DIR}/src/org/common/build/BuildWithNpm.groovy > reports/build.log 2>&1
                 cat reports/build.log
             else
                 echo "Error: Groovy script not found at: ${BASE_DIR}/src/org/common/build/BuildWithNpm.groovy"
                 exit 1
             fi
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - build
