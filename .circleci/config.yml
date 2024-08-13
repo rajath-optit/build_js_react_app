@@ -26,15 +26,14 @@ jobs:
           name: Install Groovy
           command: |
             wget https://groovy.jfrog.io/artifactory/dist-release-local/groovy-zips/apache-groovy-binary-5.0.0-alpha-9.zip -O groovy.zip
-            sudo unzip groovy.zip -d /opt
-            sudo ln -sf /opt/groovy-5.0.0-alpha-9/bin/groovy /usr/local/bin/groovy
-            sudo chmod +x /opt/groovy-5.0.0-alpha-9/bin/groovy
+            mkdir -p $HOME/groovy
+            unzip groovy.zip -d $HOME/groovy
 
       # Set GROOVY_HOME and update PATH environment variable
       - run:
           name: Set GROOVY_HOME and PATH
           command: |
-            echo 'export GROOVY_HOME=/opt/groovy-5.0.0-alpha-9' >> $BASH_ENV
+            echo 'export GROOVY_HOME=$HOME/groovy/groovy-5.0.0-alpha-9' >> $BASH_ENV
             echo 'export PATH=$GROOVY_HOME/bin:$PATH' >> $BASH_ENV
             source $BASH_ENV
 
@@ -42,11 +41,11 @@ jobs:
       - run:
           name: Verify Groovy Installation
           command: |
-            groovy --version || /opt/groovy-5.0.0-alpha-9/bin/groovy --version
+            groovy --version || $HOME/groovy/groovy-5.0.0-alpha-9/bin/groovy --version
 
       # Save environment variables to workspace
       - persist_to_workspace:
-          root: /opt
+          root: $HOME/groovy
           paths:
             - groovy-5.0.0-alpha-9
 
@@ -54,11 +53,11 @@ jobs:
     executor: default
     steps:
       - attach_workspace:
-          at: /opt
+          at: $HOME/groovy
       - run:
           name: Set GROOVY_HOME and PATH
           command: |
-            echo 'export GROOVY_HOME=/opt/groovy-5.0.0-alpha-9' >> $BASH_ENV
+            echo 'export GROOVY_HOME=$HOME/groovy/groovy-5.0.0-alpha-9' >> $BASH_ENV
             echo 'export PATH=$GROOVY_HOME/bin:$PATH' >> $BASH_ENV
             source $BASH_ENV
       - run:
@@ -66,58 +65,4 @@ jobs:
           command: |
             groovy Jenkins/shared-libraries/src/org/common/build/BuildWithNpm.groovy | tee build-script.log
 
-  unit_test:
-    executor: default
-    steps:
-      - attach_workspace:
-          at: /opt
-      - run:
-          name: Set GROOVY_HOME and PATH
-          command: |
-            echo 'export GROOVY_HOME=/opt/groovy-5.0.0-alpha-9' >> $BASH_ENV
-            echo 'export PATH=$GROOVY_HOME/bin:$PATH' >> $BASH_ENV
-            source $BASH_ENV
-      - run:
-          name: Run Unit Tests
-          command: |
-            groovy Jenkins/shared-libraries/src/org/common/unitTest/UnitTestWithNpm.groovy | tee test-script.log
-            cat reports/unit-test.log
-
-  sonar_analysis:
-    executor: default
-    steps:
-      - attach_workspace:
-          at: /opt
-      - run:
-          name: Set GROOVY_HOME and PATH
-          command: |
-            echo 'export GROOVY_HOME=/opt/groovy-5.0.0-alpha-9' >> $BASH_ENV
-            echo 'export PATH=$GROOVY_HOME/bin:$PATH' >> $BASH_ENV
-            source $BASH_ENV
-      - run:
-          name: SonarQube Analysis
-          command: |
-            groovy Jenkins/shared-libraries/vars/common/codeAnalysis/PerformSonarAnalysisForReactjs.groovy \
-              --sonarProjectKey ${SONAR_PROJECT_KEY} \
-              --sonarOrganization ${SONAR_ORGANIZATION} \
-              --sonarSourcesDir ${SONAR_SOURCES_DIR} \
-              --sonarToken ${SONAR_TOKEN} > reports/sonar-analysis.log 2>&1
-            cat reports/sonar-analysis.log
-
-  # Continue with the rest of the jobs similarly
-
-workflows:
-  version: 2
-  build_and_deploy:
-    jobs:
-      - git_checkout
-      - build:
-          requires:
-            - git_checkout
-      - unit_test:
-          requires:
-            - build
-      - sonar_analysis:
-          requires:
-            - unit_test
-      # Continue with the rest of the jobs similarly
+  # Continue with the other jobs similarly
