@@ -58,13 +58,79 @@ jobs:
       - run:
           name: Install SonarScanner
           command: |
-            wget -qO /tmp/sonar-scanner.zip https://sonarcloud.io/static/cpp/sonar-scanner-cli-4.6.2.2472-linux.zip
+            #!/bin/bash -eo pipefail
+            
+            # Define SonarScanner version and download URL
+            SONAR_SCANNER_VERSION="4.6.2.2472"
+            SONAR_SCANNER_URL="https://sonarcloud.io/static/cpp/sonar-scanner-cli-${SONAR_SCANNER_VERSION}-linux.zip"
+            SONAR_SCANNER_DIR="/opt/sonar-scanner/sonar-scanner-${SONAR_SCANNER_VERSION}-linux"
+            SONAR_SCANNER_BIN="/usr/local/bin/sonar-scanner"
+            
+            # Download SonarScanner ZIP
+            echo "Downloading SonarScanner..."
+            wget -qO /tmp/sonar-scanner.zip "$SONAR_SCANNER_URL"
+            if [ $? -ne 0 ]; then
+                echo "Failed to download SonarScanner."
+                exit 1
+            fi
+            
+            # Create directory for SonarScanner
+            echo "Creating directory for SonarScanner..."
             sudo mkdir -p /opt/sonar-scanner
+            if [ $? -ne 0 ]; then
+                echo "Failed to create directory /opt/sonar-scanner."
+                exit 1
+            fi
+            
+            # Unzip SonarScanner
+            echo "Unzipping SonarScanner..."
             sudo unzip /tmp/sonar-scanner.zip -d /opt/sonar-scanner
-            sudo ln -sf /opt/sonar-scanner/sonar-scanner-4.6.2.2472-linux/bin/sonar-scanner /usr/local/bin/sonar-scanner
-            sudo chmod +x /usr/local/bin/sonar-scanner
+            if [ $? -ne 0 ]; then
+                echo "Failed to unzip SonarScanner."
+                exit 1
+            fi
+            
+            # Create symbolic link to SonarScanner executable
+            echo "Creating symbolic link..."
+            sudo ln -sf "$SONAR_SCANNER_DIR/bin/sonar-scanner" "$SONAR_SCANNER_BIN"
+            if [ $? -ne 0 ]; then
+                echo "Failed to create symbolic link."
+                exit 1
+            fi
+            
+            # Ensure SonarScanner is executable
+            echo "Setting permissions..."
+            sudo chmod +x "$SONAR_SCANNER_BIN"
+            if [ $? -ne 0 ]; then
+                echo "Failed to set permissions for SonarScanner."
+                exit 1
+            fi
+            
+            # Add SonarScanner to PATH
+            echo "Updating PATH..."
             echo 'export PATH=$PATH:/opt/sonar-scanner/sonar-scanner-4.6.2.2472-linux/bin' >> $BASH_ENV
+            if [ $? -ne 0 ]; then
+                echo "Failed to update PATH in $BASH_ENV."
+                exit 1
+            fi
+            
+            # Source updated environment variables
             source $BASH_ENV
+            if [ $? -ne 0 ]; then
+                echo "Failed to source $BASH_ENV."
+                exit 1
+            fi
+            
+            # Verify installation
+            echo "Verifying SonarScanner installation..."
+            sonar-scanner --version
+            if [ $? -ne 0 ]; then
+                echo "SonarScanner installation verification failed."
+                exit 1
+            fi
+            
+            echo "SonarScanner installation completed successfully."
+
 
       - run:
           name: Run SonarScanner
