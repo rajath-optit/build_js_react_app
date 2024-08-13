@@ -6,7 +6,6 @@ executors:
       - image: circleci/python:3.8
 
 jobs:
-  # Setup job to prepare the environment
   setup:
     executor: default
     parameters:
@@ -60,7 +59,14 @@ jobs:
           command: |
             echo 'export GROOVY_HOME=/opt/groovy-5.0.0-alpha-9' >> $BASH_ENV
             echo 'export PATH=$GROOVY_HOME/bin:$PATH' >> $BASH_ENV
+
+      # Set BASE_DIR environment variable
+      - run:
+          name: Set BASE_DIR
+          command: |
+            echo "export BASE_DIR=${CIRCLE_WORKING_DIRECTORY}/build_js_react_app/Jenkins/shared-libraries" >> $BASH_ENV
             source $BASH_ENV
+            echo "BASE_DIR is set to: ${BASE_DIR}"
 
       # Verify Groovy installation
       - run:
@@ -76,14 +82,6 @@ jobs:
             sudo apt-get install -y nodejs
             node --version
             npm --version
-
-      # Define base directory
-      - run:
-          name: Define Base Directory
-          command: |
-            echo "export BASE_DIR=${CIRCLE_WORKING_DIRECTORY}/build_js_react_app/Jenkins/shared-libraries" >> $BASH_ENV
-            echo "BASE_DIR is set to: ${BASE_DIR}" >> $BASH_ENV
-            source $BASH_ENV
 
       # Run Groovy script for build
       - run:
