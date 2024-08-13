@@ -6,85 +6,102 @@ executors:
       - image: circleci/python:3.8
 
 jobs:
-  # Checkout and prepare the workspace
-  prepare:
+  # Setup job to prepare the environment
+  setup:
     executor: default
+    parameters:
+      dockerRepo:
+        type: string
+        default: "your-docker-repo"
+      dockerImageName:
+        type: string
+        default: "your-image-name"
+      dockerImageTag:
+        type: string
+        default: "latest"
+      sonarProjectKey:
+        type: string
+        default: "your-sonar-project-key"
+      sonarOrganization:
+        type: string
+        default: "your-sonar-organization"
+      sonarSourcesDir:
+        type: string
+        default: "src"
+      sonarToken:
+        type: string
+        default: "your-sonar-token"
+      dockerCredential:
+        type: string
+        default: "your-docker-credential"
+
     steps:
       - checkout
+
+      # Install required packages
+      - run:
+          name: Install Java and other packages
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y unzip wget openjdk-11-jdk
+
+      # Install Groovy
       - run:
           name: Install Groovy
           command: |
-            sudo apt-get update
-            sudo apt-get install -y openjdk-11-jdk unzip wget
             wget https://groovy.jfrog.io/artifactory/dist-release-local/groovy-zips/apache-groovy-binary-5.0.0-alpha-9.zip -O groovy.zip
             sudo unzip groovy.zip -d /opt
             sudo ln -sf /opt/groovy-5.0.0-alpha-9/bin/groovy /usr/local/bin/groovy
             sudo chmod +x /opt/groovy-5.0.0-alpha-9/bin/groovy
+
+      # Set GROOVY_HOME and update PATH environment variable
       - run:
-          name: Check Groovy Installation
+          name: Set GROOVY_HOME and PATH
           command: |
-            groovy --version
+            echo 'export GROOVY_HOME=/opt/groovy-5.0.0-alpha-9' >> $BASH_ENV
+            echo 'export PATH=$GROOVY_HOME/bin:$PATH' >> $BASH_ENV
+            source $BASH_ENV
+
+      # Verify Groovy installation
+      - run:
+          name: Verify Groovy Installation
+          command: |
+            groovy --version || /opt/groovy-5.0.0-alpha-9/bin/groovy --version
+
+      # Install Node.js and npm
+      - run:
+          name: Install Node.js and npm
+          command: |
+            curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
+            sudo apt-get install -y nodejs
+            node --version
+            npm --version
+
+      # Define base directory
       - run:
           name: Define Base Directory
           command: |
             echo "export BASE_DIR=${CIRCLE_WORKING_DIRECTORY}/build_js_react_app/Jenkins/shared-libraries" >> $BASH_ENV
             echo "BASE_DIR is set to: ${BASE_DIR}" >> $BASH_ENV
             source $BASH_ENV
-      - persist_to_workspace:
-          root: .
-          paths:
-            - .
 
-  # Build with NPM
-  build:
-    executor: default
-    steps:
-      - attach_workspace:
-          at: .
+      # Run Groovy script for build
       - run:
-          name: Check Groovy Installation
-          command: |
-            groovy --version
-      - run:
-          name: Debug Path
-          command: |
-            echo "BASE_DIR is set to: ${BASE_DIR}"
-            ls -l ${BASE_DIR}/src/org/common/build/BuildWithNpm.groovy
-      - run:
-          name: Build with NPM
+          name: Run Build Script
           command: |
             mkdir -p reports
             groovy ${BASE_DIR}/src/org/common/build/BuildWithNpm.groovy > reports/build.log 2>&1
             cat reports/build.log
-      - persist_to_workspace:
-          root: .
-          paths:
-            - .
 
-  # Run Unit Tests
-  unit_test:
-    executor: default
-    steps:
-      - attach_workspace:
-          at: .
+      # Run Groovy script for test
       - run:
-          name: Run Unit Tests
+          name: Run Test Script
           command: |
-            groovy ${BASE_DIR}/vars/common/test/RunUnitTests.groovy > reports/unit-test.log 2>&1
-            cat reports/unit-test.log
-      - persist_to_workspace:
-          root: .
-          paths:
-            - .
+            groovy ${BASE_DIR}/src/org/common/unitTest/UnitTestWithNpm.groovy
 
-  # SonarQube Analysis
-  sonar_analysis:
-    executor: default
-    steps:
-      - attach_workspace:
-          at: .
+      # Run SonarCloud Analysis
       - run:
-          name: SonarQube Analysis
+          name: SonarCloud Analysis
           command: |
             groovy ${BASE_DIR}/vars/common/codeAnalysis/PerformSonarAnalysisForReactjs.groovy \
               --sonarProjectKey ${SONAR_PROJECT_KEY} \
@@ -92,54 +109,29 @@ jobs:
               --sonarSourcesDir ${SONAR_SOURCES_DIR} \
               --sonarToken ${SONAR_TOKEN} > reports/sonar-analysis.log 2>&1
             cat reports/sonar-analysis.log
-      - persist_to_workspace:
-          root: .
-          paths:
-            - .
 
-  # Docker Build
-  docker_build:
-    executor: default
-    steps:
-      - attach_workspace:
-          at: .
+      # Build Docker Image
+      - setup_remote_docker:
+          version: 20.10.7
       - run:
-          name: Docker Build
+          name: Build Docker Image
           command: |
             groovy ${BASE_DIR}/vars/common/dockerUtil/DockerBuild.groovy \
               --dockerImageName ${DOCKER_IMAGE_NAME} \
               --dockerImageTag ${DOCKER_IMAGE_TAG} > reports/docker-build.log 2>&1
             cat reports/docker-build.log
-      - persist_to_workspace:
-          root: .
-          paths:
-            - .
 
-  # Docker Scan
-  docker_scan:
-    executor: default
-    steps:
-      - attach_workspace:
-          at: .
+      # Scan Docker Image with Trivy
       - run:
-          name: Docker Scan
+          name: Scan Docker Image
           command: |
             groovy ${BASE_DIR}/vars/common/dockerUtil/DockerScan.groovy \
               --dockerImageName ${DOCKER_IMAGE_NAME} > reports/docker-scan.log 2>&1
             cat reports/docker-scan.log
-      - persist_to_workspace:
-          root: .
-          paths:
-            - .
 
-  # Docker Publish
-  docker_publish:
-    executor: default
-    steps:
-      - attach_workspace:
-          at: .
+      # Publish Docker Image
       - run:
-          name: Docker Publish
+          name: Publish Docker Image
           command: |
             groovy ${BASE_DIR}/vars/common/containerPublish/DockerHubPublish.groovy \
               --dockerImageName ${DOCKER_IMAGE_NAME} \
@@ -150,24 +142,6 @@ jobs:
 
 workflows:
   version: 2
-  build_and_deploy:
+  build:
     jobs:
-      - prepare
-      - build:
-          requires:
-            - prepare
-      - unit_test:
-          requires:
-            - build
-      - sonar_analysis:
-          requires:
-            - unit_test
-      - docker_build:
-          requires:
-            - sonar_analysis
-      - docker_scan:
-          requires:
-            - docker_build
-      - docker_publish:
-          requires:
-            - docker_scan
+      - setup
