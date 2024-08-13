@@ -11,7 +11,7 @@ jobs:
     steps:
       - checkout
       
-       # Install required packages
+      # Install required packages
       - run:
           name: Install Java and other packages
           command: |
