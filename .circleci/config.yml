@@ -31,11 +31,8 @@ jobs:
           name: Build with NPM
           command: |
             mkdir -p reports
-            groovy ${BASE_DIR}/src/org/common/build/BuildWithNpm.groovy \
-              --dockerRepo ${DOCKER_REPO} \
-              --dockerImageName ${DOCKER_IMAGE_NAME} \
-              --dockerImageTag ${DOCKER_IMAGE_TAG} > reports/build.log 2>&1
-            cat reports/build.log
+            groovy ${BASE_DIR}/src/org/common/build/BuildWithNpm.groovy
+              
       - persist_to_workspace:
           root: .
           paths:
