@@ -6,7 +6,7 @@ executors:
       - image: circleci/openjdk:11-jdk
 
 jobs:
-  git_checkout:
+  setup:
     executor: default
     steps:
       - checkout
@@ -23,74 +23,25 @@ jobs:
             wget -qO /tmp/groovy.zip https://groovy.jfrog.io/artifactory/dist-release-local/groovy-zips/apache-groovy-binary-5.0.0-alpha-9.zip
             sudo unzip /tmp/groovy.zip -d /opt
             sudo ln -sf /opt/groovy-5.0.0-alpha-9/bin/groovy /usr/local/bin/groovy
+            sudo chmod +x /opt/groovy-5.0.0-alpha-9/bin/groovy
 
       - run:
           name: Set JAVA_HOME and PATH
           command: |
-            echo 'export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64' >> ~/.bashrc
-            echo 'export PATH=$JAVA_HOME/bin:$PATH' >> ~/.bashrc
-            source ~/.bashrc
-
-      - run:
-          name: Verify Java and Groovy Installation
-          command: |
+            export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
+            export PATH=$JAVA_HOME/bin:$PATH
+            echo "JAVA_HOME is set to: $JAVA_HOME"
+            ls -l $JAVA_HOME/bin/java
             java -version
             groovy --version
-
-      - run:
-          name: Install Node.js and npm
-          command: |
-            curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
-            sudo apt-get install -y nodejs
-            node --version
-            npm --version
 
       - run:
           name: Run Build Script
           command: |
             groovy Jenkins/shared-libraries/src/org/common/build/BuildWithNpm.groovy
 
-      - run:
-          name: Run Test Script
-          command: |
-            groovy Jenkins/shared-libraries/src/org/common/unitTest/UnitTestWithNpm.groovy
-
-      - run:
-          name: Run SonarScanner
-          command: |
-            sonar-scanner \
-              -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
-              -Dsonar.organization=${SONAR_ORGANIZATION} \
-              -Dsonar.sources=${SONAR_SOURCES_DIR} \
-              -Dsonar.java.binaries=${SONAR_BINARIES_DIR} \
-              -Dsonar.host.url=https://sonarcloud.io \
-              -Dsonar.login=${SONAR_TOKEN} \
-              > sonar-scanner.log 2>&1 || {
-                echo "SonarScanner failed with exit code $?. See sonar-scanner.log for details."
-                cat sonar-scanner.log
-                exit 1
-              }
-
-      - setup_remote_docker:
-          version: 20.10.7
-
-      - run:
-          name: Build Docker Image
-          command: |
-            groovy Jenkins/shared-libraries/vars/common/dockerUtil/DockerUtil.groovy
-
-      - run:
-          name: Scan Docker Image
-          command: |
-            groovy Jenkins/shared-libraries/vars/common/dockerUtil/DockerScan.groovy
-
-      - run:
-          name: Publish Docker Image
-          command: |
-            groovy Jenkins/shared-libraries/vars/common/containerPublish/DockerHubPublish.groovy
-
 workflows:
   version: 2
   build:
     jobs:
-      - git_checkout
+      - setup
