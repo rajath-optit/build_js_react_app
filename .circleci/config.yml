@@ -26,16 +26,9 @@ jobs:
             sudo chmod +x /opt/groovy-5.0.0-alpha-9/bin/groovy
 
       - run:
-          name: Locate Java Installation
-          command: |
-            echo "Locating Java Installation..."
-            find / -name 'java' 2>/dev/null | grep 'bin/java'
-
-      - run:
           name: Set JAVA_HOME and PATH
           command: |
-            JAVA_PATH=$(find / -name 'java' 2>/dev/null | grep 'bin/java' | head -n 1 | sed 's|/bin/java||')
-            export JAVA_HOME=$JAVA_PATH
+            export JAVA_HOME=/usr/local/openjdk-11
             export PATH=$JAVA_HOME/bin:$PATH
             echo "JAVA_HOME is set to: $JAVA_HOME"
             ls -l $JAVA_HOME/bin/java
