@@ -62,6 +62,12 @@ jobs:
               echo "Failed to download SonarScanner or the file does not exist"
               exit 1
             fi
+      
+            file_type=$(file -b /tmp/sonar-scanner.zip)
+            if [[ "$file_type" != "Zip archive data"* ]]; then
+              echo "Downloaded file is not a valid ZIP archive: $file_type"
+              exit 1
+            fi
             
             sudo unzip /tmp/sonar-scanner.zip -d /opt/sonar-scanner
             if [ $? -ne 0 ]; then
@@ -70,6 +76,7 @@ jobs:
             fi
             sudo ln -sf /opt/sonar-scanner/sonar-scanner-4.9.2.2747-linux/bin/sonar-scanner /usr/local/bin/sonar-scanner
             sudo chmod +x /usr/local/bin/sonar-scanner
+      
 
 
 
