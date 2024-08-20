@@ -6,7 +6,7 @@ executors:
       - image: circleci/python:3.8
 
 jobs:
-  git_checkout:
+  setup_environment:
     executor: default
     steps:
       - checkout
@@ -32,17 +32,46 @@ jobs:
             echo 'export PATH=$GROOVY_HOME/bin:$PATH' >> $BASH_ENV
 
       - run:
-          name: Verify Groovy Installation
-          command: |
-            groovy --version || /opt/groovy-5.0.0-alpha-9/bin/groovy --version
-
-      - run:
           name: Install Node.js and npm
           command: |
             curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
             sudo apt-get install -y nodejs
             node --version
             npm --version
+
+      - run:
+          name: Install SonarScanner
+          command: |
+            curl -L -o /tmp/sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.9.2.2747-linux.zip
+            if [ $? -ne 0 ] || [ ! -f /tmp/sonar-scanner.zip ]; then
+              echo "Failed to download SonarScanner or the file does not exist"
+              exit 1
+            fi
+            file_type=$(file -b /tmp/sonar-scanner.zip)
+            if [[ "$file_type" != "Zip archive data"* ]]; then
+              echo "Downloaded file is not a valid ZIP archive: $file_type"
+              exit 1
+            fi
+            sudo unzip /tmp/sonar-scanner.zip -d /opt/sonar-scanner
+            if [ $? -ne 0 ]; then
+              echo "Failed to unzip SonarScanner"
+              exit 1
+            fi
+            sudo ln -sf /opt/sonar-scanner/sonar-scanner-4.9.2.2747-linux/bin/sonar-scanner /usr/local/bin/sonar-scanner
+            sudo chmod +x /usr/local/bin/sonar-scanner
+
+      - run:
+          name: Verify Installations
+          command: |
+            groovy --version
+            node --version
+            npm --version
+            sonar-scanner --version
+
+  build_test_deploy:
+    executor: default
+    steps:
+      - checkout
 
       - run:
           name: Run Build Script
@@ -53,37 +82,6 @@ jobs:
           name: Run Test Script
           command: |
             groovy Jenkins/shared-libraries/src/org/common/unitTest/UnitTestWithNpm.groovy
-
-      - run:
-          name: Install SonarScanner
-          command: |
-            curl -L -o /tmp/sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.9.2.2747-linux.zip
-            if [ $? -ne 0 ] || [ ! -f /tmp/sonar-scanner.zip ]; then
-              echo "Failed to download SonarScanner or the file does not exist"
-              exit 1
-            fi
-      
-            file_type=$(file -b /tmp/sonar-scanner.zip)
-            if [[ "$file_type" != "Zip archive data"* ]]; then
-              echo "Downloaded file is not a valid ZIP archive: $file_type"
-              exit 1
-            fi
-            
-            sudo unzip /tmp/sonar-scanner.zip -d /opt/sonar-scanner
-            if [ $? -ne 0 ]; then
-              echo "Failed to unzip SonarScanner"
-              exit 1
-            fi
-            sudo ln -sf /opt/sonar-scanner/sonar-scanner-4.9.2.2747-linux/bin/sonar-scanner /usr/local/bin/sonar-scanner
-            sudo chmod +x /usr/local/bin/sonar-scanner
-      
-
-
-
-      - run:
-          name: Verify SonarScanner Installation
-          command: |
-            sonar-scanner --version
 
       - run:
           name: Run SonarScanner
@@ -123,4 +121,7 @@ workflows:
   version: 2
   build:
     jobs:
-      - git_checkout
+      - setup_environment
+      - build_test_deploy:
+          requires:
+            - setup_environment
