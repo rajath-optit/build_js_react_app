@@ -15,17 +15,18 @@ jobs:
           name: Install Basic Utilities and Java
           command: |
             sudo apt-get update
-            sudo apt-get install -y unzip wget curl bash software-properties-common
+            sudo apt-get install -y unzip wget curl bash software-properties-common gnupg
 
       - run:
           name: Add deadsnakes PPA and Install Python 3.8
           command: |
-            # Add deadsnakes PPA
-            sudo add-apt-repository -y ppa:deadsnakes/ppa
-            
             # Add GPG key directly
-            wget -qO - https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x6A6A05B4E8B7B5B0C8B89C40 | sudo apt-key add -
-
+            sudo mkdir -p /etc/apt/keyrings
+            wget -qO - https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x6A6A05B4E8B7B5B0C8B89C40 | sudo tee /etc/apt/keyrings/deadsnakes.asc
+            
+            # Add deadsnakes PPA
+            echo "deb [signed-by=/etc/apt/keyrings/deadsnakes.asc] http://ppa.launchpad.net/deadsnakes/ppa/ubuntu focal main" | sudo tee /etc/apt/sources.list.d/deadsnakes.list
+            
             # Update package list
             sudo apt-get update
 
