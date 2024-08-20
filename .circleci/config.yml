@@ -26,15 +26,17 @@ jobs:
             sudo chmod +x /opt/groovy-5.0.0-alpha-9/bin/groovy
 
       - run:
-          name: Set GROOVY_HOME and PATH
+          name: Set JAVA_HOME, GROOVY_HOME, and PATH
           command: |
+            echo 'export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64' >> $BASH_ENV
             echo 'export GROOVY_HOME=/opt/groovy-5.0.0-alpha-9' >> $BASH_ENV
-            echo 'export PATH=$GROOVY_HOME/bin:$PATH' >> $BASH_ENV
+            echo 'export PATH=$JAVA_HOME/bin:$GROOVY_HOME/bin:$PATH' >> $BASH_ENV
             source $BASH_ENV
 
       - run:
-          name: Verify Groovy Installation
+          name: Verify Java and Groovy Installation
           command: |
+            java -version
             groovy --version || /opt/groovy-5.0.0-alpha-9/bin/groovy --version
 
       - run:
