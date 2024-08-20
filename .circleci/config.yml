@@ -3,7 +3,7 @@ version: 2.1
 executors:
   default:
     docker:
-      - image: circleci/openjdk:11-jdk
+      - image: drift/java11@0.1.14
 
 jobs:
   setup:
