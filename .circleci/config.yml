@@ -25,7 +25,22 @@ jobs:
             sudo ln -sf /opt/groovy-5.0.0-alpha-9/bin/groovy /usr/local/bin/groovy
             sudo chmod +x /opt/groovy-5.0.0-alpha-9/bin/groovy
 
-     
+      - run:
+          name: Set JAVA_HOME and PATH
+          command: |
+            export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
+            export PATH=$JAVA_HOME/bin:$PATH
+            echo "JAVA_HOME is set to: $JAVA_HOME"
+            ls -l $JAVA_HOME/bin/java
+            java -version
+
+      - run:
+          name: Set GROOVY_HOME and PATH
+          command: |
+            export GROOVY_HOME=/opt/groovy-5.0.0-alpha-9
+            export PATH=$GROOVY_HOME/bin:$PATH
+            echo "GROOVY_HOME is set to: $GROOVY_HOME"
+            groovy --version
 
       - run:
           name: Run Build Script
