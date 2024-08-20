@@ -26,6 +26,11 @@ jobs:
             sudo chmod +x /opt/groovy-5.0.0-alpha-9/bin/groovy
 
       - run:
+          name: List Java Installations
+          command: |
+            ls -l /usr/lib/jvm
+
+      - run:
           name: Set JAVA_HOME and PATH
           command: |
             export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
