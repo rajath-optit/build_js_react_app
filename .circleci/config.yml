@@ -18,28 +18,13 @@ jobs:
             sudo apt-get install -y unzip wget curl bash software-properties-common gnupg
 
       - run:
-          name: Install Groovy
-          command: |
-            wget -qO /tmp/groovy.zip https://groovy.jfrog.io/artifactory/dist-release-local/groovy-zips/apache-groovy-binary-5.0.0-alpha-9.zip
-            sudo unzip /tmp/groovy.zip -d /opt
-            sudo ln -sf /opt/groovy-5.0.0-alpha-9/bin/groovy /usr/local/bin/groovy
-            sudo chmod +x /opt/groovy-5.0.0-alpha-9/bin/groovy
-
-      - run:
-          name: Set JAVA_HOME and PATH
+          name: Verify Java and Groovy Installation
           command: |
             export JAVA_HOME=/usr/local/openjdk-11
             export PATH=$JAVA_HOME/bin:$PATH
             echo "JAVA_HOME is set to: $JAVA_HOME"
-            ls -l $JAVA_HOME/bin/java
+            echo "PATH is set to: $PATH"
             java -version
-
-      - run:
-          name: Set GROOVY_HOME and PATH
-          command: |
-            export GROOVY_HOME=/opt/groovy-5.0.0-alpha-9
-            export PATH=$GROOVY_HOME/bin:$PATH
-            echo "GROOVY_HOME is set to: $GROOVY_HOME"
             groovy --version
 
       - run:
