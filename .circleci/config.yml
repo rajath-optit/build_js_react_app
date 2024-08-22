@@ -12,9 +12,25 @@ jobs:
       - checkout
 
       - run:
-          name: Install Basic Utilities and Java
+          name: Install Basic Utilities
           command: |
-            apk add --no-cache unzip wget curl openjdk11-jdk bash
+            apk add --no-cache unzip wget curl bash
+
+      - run:
+          name: Check and Install Java 17
+          command: |
+            if ! command -v java >/dev/null 2>&1; then
+              echo "Java not found, installing Java 17..."
+              apk add --no-cache openjdk17-jdk
+            else
+              echo "Java is already installed."
+            fi
+
+      - run:
+          name: Set JAVA_HOME
+          command: |
+            echo 'export JAVA_HOME=/usr/lib/jvm/java-17-openjdk' >> $BASH_ENV
+            echo 'export PATH=$JAVA_HOME/bin:$PATH' >> $BASH_ENV
 
       - run:
           name: Install Groovy
