@@ -3,7 +3,7 @@ version: 2.1
 executors:
   default:
     docker:
-      - image: cimg/python
+      - image: circleci/python:3.8
 
 jobs:
   git_checkout:
