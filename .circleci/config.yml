@@ -31,16 +31,9 @@ jobs:
           command: |
             export JAVA_HOME=/usr/lib/jvm/java-17-openjdk
             export PATH=${JAVA_HOME}/bin:$PATH
-            echo "JAVA_HOME is set to $JAVA_HOME"
-            echo "PATH is set to $PATH"
-            java -version
             echo 'export JAVA_HOME=/usr/lib/jvm/java-17-openjdk' >> $BASH_ENV
             echo 'export PATH=$JAVA_HOME/bin:$PATH' >> $BASH_ENV
             source $BASH_ENV
-
-      - run:
-          name: Verify Java Installation
-          command: |
             java -version
             javac -version
 
