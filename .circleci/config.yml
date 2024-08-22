@@ -105,9 +105,8 @@ jobs:
           command: |
             groovy Jenkins/shared-libraries/vars/common/containerPublish/DockerHubPublish.groovy
 
-    workflows:
-      version: 2
-      build:
-        jobs:
-          - git_checkout
-    ```
+workflows:
+  version: 2
+  build:
+    jobs:
+      - git_checkout
