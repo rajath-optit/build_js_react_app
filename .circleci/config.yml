@@ -36,6 +36,8 @@ jobs:
             source $BASH_ENV
             java -version
             javac -version
+            echo "JAVA_HOME set to: $JAVA_HOME"
+            echo "PATH is: $PATH"
 
       - run:
           name: Install Groovy
