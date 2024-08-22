@@ -3,7 +3,7 @@ version: 2.1
 executors:
   default:
     docker:
-      - image: circleci/python:3.8
+      - image: quay.io/ukhomeofficedigital/aws-alpine-jdk17:v17.0.10  # Base Docker image
 
 jobs:
   git_checkout:
@@ -12,18 +12,36 @@ jobs:
       - checkout
 
       - run:
-          name: Install Basic Utilities and Java
+          name: Install Necessary Packages
           command: |
-            sudo apt-get update
-            sudo apt-get install -y unzip wget curl openjdk-11-jdk bash
+            apk add --no-cache wget curl git python3 py3-pip unzip ansible-lint gcompat
+
+      - run:
+          name: Install SonarScanner
+          command: |
+            export SONAR_SCANNER_VER=4.8.1.3023
+            wget -O /tmp/sonar-scanner-cli-${SONAR_SCANNER_VER}.zip \
+              https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-${SONAR_SCANNER_VER}.zip
+            unzip /tmp/sonar-scanner-cli-${SONAR_SCANNER_VER}.zip -d /opt/
+            rm -rf /tmp/sonar-scanner-cli-${SONAR_SCANNER_VER}.zip
+            export SONAR_SCANNER_OPTS="-Xmx512m -Dsonar.host.url=https://sonarqube.digital.homeoffice.gov.uk/"
+            export PATH=/opt/sonar-scanner-${SONAR_SCANNER_VER}/bin:${PATH}
+
+      - run:
+          name: Verify SonarScanner Installation
+          command: |
+            sonar-scanner --version || {
+              echo "SonarScanner not found. Please check the installation."
+              exit 1
+            }
 
       - run:
           name: Install Groovy
           command: |
             wget -qO /tmp/groovy.zip https://groovy.jfrog.io/artifactory/dist-release-local/groovy-zips/apache-groovy-binary-5.0.0-alpha-9.zip
-            sudo unzip /tmp/groovy.zip -d /opt
-            sudo ln -sf /opt/groovy-5.0.0-alpha-9/bin/groovy /usr/local/bin/groovy
-            sudo chmod +x /opt/groovy-5.0.0-alpha-9/bin/groovy
+            unzip /tmp/groovy.zip -d /opt
+            ln -sf /opt/groovy-5.0.0-alpha-9/bin/groovy /usr/local/bin/groovy
+            chmod +x /opt/groovy-5.0.0-alpha-9/bin/groovy
 
       - run:
           name: Set GROOVY_HOME and PATH
@@ -39,8 +57,7 @@ jobs:
       - run:
           name: Install Node.js and npm
           command: |
-            curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
-            sudo apt-get install -y nodejs
+            curl -fsSL https://deb.nodesource.com/setup_16.x | apk add --no-cache nodejs npm
             node --version
             npm --version
 
@@ -53,36 +70,6 @@ jobs:
           name: Run Test Script
           command: |
             groovy Jenkins/shared-libraries/src/org/common/unitTest/UnitTestWithNpm.groovy
-
-      - run:
-          name: Download and Verify SonarScanner
-          command: |
-            for i in 1 2 3; do
-              curl -L -o /tmp/sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.9.2.2747-linux.zip
-              if [ $? -eq 0 ]; then
-                break
-              fi
-              echo "Download attempt $i failed, retrying..."
-              sleep 5
-            done
-
-            echo "Verifying SonarScanner ZIP file..."
-            unzip -t /tmp/sonar-scanner.zip || {
-              echo "SonarScanner ZIP file verification failed."
-              exit 1
-            }
-
-      - run:
-          name: Install SonarScanner
-          command: |
-            sudo unzip /tmp/sonar-scanner.zip -d /opt/sonar-scanner
-            sudo ln -sf /opt/sonar-scanner/sonar-scanner-4.9.2.2747-linux/bin/sonar-scanner /usr/local/bin/sonar-scanner
-            sudo chmod +x /usr/local/bin/sonar-scanner
-
-      - run:
-          name: Verify SonarScanner Installation
-          command: |
-            sonar-scanner --version
 
       - run:
           name: Run SonarScanner
@@ -118,8 +105,9 @@ jobs:
           command: |
             groovy Jenkins/shared-libraries/vars/common/containerPublish/DockerHubPublish.groovy
 
-workflows:
-  version: 2
-  build:
-    jobs:
-      - git_checkout
+    workflows:
+      version: 2
+      build:
+        jobs:
+          - git_checkout
+    ```
