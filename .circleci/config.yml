@@ -1,180 +1,118 @@
 version: 2.1
 
 executors:
-  java-executor:
+  default:
     docker:
-      - image: circleci/openjdk:11-jdk
-    environment:
-      JAVA_HOME: /usr/local/openjdk-11
-      GROOVY_HOME: /usr/local/groovy
-      PATH: /usr/local/groovy/bin:/usr/local/openjdk-11/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-    working_directory: /home/circleci/project
+      - image: circleci/python:3.8
 
 jobs:
-  install_groovy:
-    executor: java-executor
+  git_checkout:
+    executor: default
     steps:
       - checkout
+
+      - run:
+          name: Install Basic Utilities and Java
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y unzip wget curl openjdk-11-jdk bash
+
       - run:
           name: Install Groovy
           command: |
-            wget https://archive.apache.org/dist/groovy/4.0.11/distribution/apache-groovy-sdk-4.0.11.zip
-            unzip apache-groovy-sdk-4.0.11.zip
-            sudo mv groovy-4.0.11 /usr/local/groovy
-            export PATH=$PATH:/usr/local/groovy/bin
-            groovy --version  # Check if Groovy is installed correctly
+            wget -qO /tmp/groovy.zip https://groovy.jfrog.io/artifactory/dist-release-local/groovy-zips/apache-groovy-binary-5.0.0-alpha-9.zip
+            sudo unzip /tmp/groovy.zip -d /opt
+            sudo ln -sf /opt/groovy-5.0.0-alpha-9/bin/groovy /usr/local/bin/groovy
+            sudo chmod +x /opt/groovy-5.0.0-alpha-9/bin/groovy
 
-  load_scripts:
-    parameters:
-      baseDir:
-        type: string
-        default: "Jenkins/shared-libraries"
-    executor: java-executor
-    steps:
       - run:
-          name: Load Scripts
+          name: Set GROOVY_HOME and PATH
           command: |
-            export PATH=$PATH:/usr/local/groovy/bin  # Ensure PATH includes Groovy bin directory
+            echo 'export GROOVY_HOME=/opt/groovy-5.0.0-alpha-9' >> $BASH_ENV
+            echo 'export PATH=$GROOVY_HOME/bin:$PATH' >> $BASH_ENV
 
-            # Debugging: Show current working directory
-            echo "Current working directory: $(pwd)"
+      - run:
+          name: Verify Groovy Installation
+          command: |
+            groovy --version || /opt/groovy-5.0.0-alpha-9/bin/groovy --version
 
-            # Debugging: List contents of current working directory
-            echo "Contents of current working directory:"
-            ls -R
+      - run:
+          name: Install Node.js and npm
+          command: |
+            curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
+            sudo apt-get install -y nodejs
+            node --version
+            npm --version
 
-            # Directly use the baseDir provided
-            baseDir="${BASE_DIR}"
-            echo "Base directory: ${baseDir}"
+      - run:
+          name: Run Build Script
+          command: |
+            groovy Jenkins/shared-libraries/src/org/common/build/BuildWithNpm.groovy
+
+      - run:
+          name: Run Test Script
+          command: |
+            groovy Jenkins/shared-libraries/src/org/common/unitTest/UnitTestWithNpm.groovy
+
+      - run:
+          name: Install SonarScanner
+          command: |
+            curl -L -o /tmp/sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.9.2.2747-linux.zip
+            if [ $? -ne 0 ]; then
+              echo "Failed to download SonarScanner"
+              exit 1
+            fi
             
-            # Debugging: List contents of base directory
-            echo "Contents of base directory:"
-            ls -R "${baseDir}" || echo "Base directory does not exist"
+            sudo unzip /tmp/sonar-scanner.zip -d /opt/sonar-scanner
+            if [ $? -ne 0 ]; then
+              echo "Failed to unzip SonarScanner"
+              exit 1
+            fi
+            sudo ln -sf /opt/sonar-scanner/sonar-scanner-4.9.2.2747-linux/bin/sonar-scanner /usr/local/bin/sonar-scanner
+            sudo chmod +x /usr/local/bin/sonar-scanner
 
-            loadScript() {
-              type=$1
-              technology=$2
-              scriptName=$3
-              scriptPath="${baseDir}/${type}/${technology}/${scriptName}.groovy"
-              echo "Loading script: ${scriptPath}"  # Debugging line
-              if [ -f "${scriptPath}" ]; then
-                cat "${scriptPath}"
-              else
-                echo "Script not found: ${scriptPath}"
+
+      - run:
+          name: Verify SonarScanner Installation
+          command: |
+            sonar-scanner --version
+
+      - run:
+          name: Run SonarScanner
+          command: |
+            sonar-scanner \
+              -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+              -Dsonar.organization=${SONAR_ORGANIZATION} \
+              -Dsonar.sources=${SONAR_SOURCES_DIR} \
+              -Dsonar.java.binaries=${SONAR_BINARIES_DIR} \
+              -Dsonar.host.url=https://sonarcloud.io \
+              -Dsonar.login=${SONAR_TOKEN} \
+              > sonar-scanner.log 2>&1 || {
+                echo "SonarScanner failed with exit code $?. See sonar-scanner.log for details."
+                cat sonar-scanner.log
                 exit 1
-              fi
-            }
+              }
 
-            gitCheckoutScript=$(loadScript "vars/common/scm-util" "git" "GitCheckout")
-            sonarScript=$(loadScript "vars/common" "codeAnalysis" "PerformSonarAnalysisForReactjs")
-            dockerBuildScript=$(loadScript "vars/common" "dockerUtil" "DockerUtil")
-            dockerPublishScript=$(loadScript "vars/common" "containerPublish" "DockerHubPublish")
-            dockerScanScript=$(loadScript "vars/common" "dockerUtil" "DockerScan")
-            buildWithNpmScript=$(loadScript "src/org/common" "build" "BuildWithNpm")
-            unitTestWithNpmScript=$(loadScript "src/org/common" "unitTest" "UnitTestWithNpm")
-
-            echo "${gitCheckoutScript}" > gitCheckoutScript.groovy
-            echo "${sonarScript}" > sonarScript.groovy
-            echo "${dockerBuildScript}" > dockerBuildScript.groovy
-            echo "${dockerPublishScript}" > dockerPublishScript.groovy
-            echo "${dockerScanScript}" > dockerScanScript.groovy
-            echo "${buildWithNpmScript}" > buildWithNpmScript.groovy
-            echo "${unitTestWithNpmScript}" > unitTestWithNpmScript.groovy
-
-  install_dependencies:
-    executor: java-executor
-    steps:
-      - run:
-          name: Install Dependencies
-          command: npm install
-
-  build:
-    executor: java-executor
-    steps:
-      - run:
-          name: Build
-          command: npm run build
-
-  test:
-    executor: java-executor
-    steps:
-      - run:
-          name: Unit Test
-          command: npm test
-
-  sonar_analysis:
-    executor: java-executor
-    steps:
-      - run:
-          name: SonarQube Analysis
-          command: |
-            export PATH=$PATH:/usr/local/groovy/bin
-            groovy -e "${sonarScript}.performSonarCloudAnalysis('${SONAR_PROJECT_KEY}', '${SONAR_ORGANIZATION}', '${SONAR_SOURCES_DIR}', '${SONAR_TOKEN}')"
-
-  docker_build:
-    docker:
-      - image: circleci/openjdk:11-jdk
-    steps:
       - setup_remote_docker:
           version: 20.10.7
-      - run:
-          name: Docker Build
-          command: |
-            export PATH=$PATH:/usr/local/groovy/bin
-            groovy -e "${dockerBuildScript}.dockerBuild('${DOCKER_IMAGE_NAME}', '${DOCKER_IMAGE_TAG}')"
 
-  docker_scan:
-    docker:
-      - image: circleci/openjdk:11-jdk
-    steps:
-      - setup_remote_docker:
-          version: 20.10.7
       - run:
-          name: Docker Scan
+          name: Build Docker Image
           command: |
-            export PATH=$PATH:/usr/local/groovy/bin
-            groovy -e "${dockerScanScript}.dockerScan('${DOCKER_IMAGE_NAME}')"
+            groovy Jenkins/shared-libraries/vars/common/dockerUtil/DockerUtil.groovy
 
-  docker_publish:
-    docker:
-      - image: circleci/openjdk:11-jdk
-    steps:
-      - setup_remote_docker:
-          version: 20.10.7
       - run:
-          name: Docker Publish
+          name: Scan Docker Image
           command: |
-            export PATH=$PATH:/usr/local/groovy/bin
-            echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
-            groovy -e "${dockerPublishScript}.publishToContainer('${DOCKER_IMAGE_NAME}', '${DOCKER_REPO}', '${DOCKER_IMAGE_TAG}', '${DOCKER_CREDENTIAL}')"
+            groovy Jenkins/shared-libraries/vars/common/dockerUtil/DockerScan.groovy
+
+      - run:
+          name: Publish Docker Image
+          command: |
+            groovy Jenkins/shared-libraries/vars/common/containerPublish/DockerHubPublish.groovy
 
 workflows:
   version: 2
-  build_and_deploy:
+  build:
     jobs:
-      - install_groovy
-      - load_scripts:
-          baseDir: "Jenkins/shared-libraries"
-          requires:
-            - install_groovy
-      - install_dependencies:
-          requires:
-            - load_scripts
-      - build:
-          requires:
-            - install_dependencies
-      - test:
-          requires:
-            - build
-      - sonar_analysis:
-          requires:
-            - test
-      - docker_build:
-          requires:
-            - sonar_analysis
-      - docker_scan:
-          requires:
-            - docker_build
-      - docker_publish:
-          requires:
-            - docker_scan
+      - git_checkout
