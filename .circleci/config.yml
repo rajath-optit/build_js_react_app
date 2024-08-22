@@ -3,7 +3,7 @@ version: 2.1
 executors:
   default:
     docker:
-      - image: quay.io/ukhomeofficedigital/aws-alpine-jdk17:v17.0.10  # Base Docker image
+      - image: quay.io/ukhomeofficedigital/aws-alpine-jdk17:v17.0.10
 
 jobs:
   git_checkout:
@@ -12,28 +12,9 @@ jobs:
       - checkout
 
       - run:
-          name: Install Necessary Packages
+          name: Install Basic Utilities and Java
           command: |
-            apk add --no-cache wget curl git python3 py3-pip unzip ansible-lint gcompat
-
-      - run:
-          name: Install SonarScanner
-          command: |
-            export SONAR_SCANNER_VER=4.8.1.3023
-            wget -O /tmp/sonar-scanner-cli-${SONAR_SCANNER_VER}.zip \
-              https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-${SONAR_SCANNER_VER}.zip
-            unzip /tmp/sonar-scanner-cli-${SONAR_SCANNER_VER}.zip -d /opt/
-            rm -rf /tmp/sonar-scanner-cli-${SONAR_SCANNER_VER}.zip
-            export SONAR_SCANNER_OPTS="-Xmx512m -Dsonar.host.url=https://sonarqube.digital.homeoffice.gov.uk/"
-            export PATH=/opt/sonar-scanner-${SONAR_SCANNER_VER}/bin:${PATH}
-
-      - run:
-          name: Verify SonarScanner Installation
-          command: |
-            sonar-scanner --version || {
-              echo "SonarScanner not found. Please check the installation."
-              exit 1
-            }
+            apk add --no-cache unzip wget curl openjdk11-jdk bash
 
       - run:
           name: Install Groovy
@@ -57,7 +38,8 @@ jobs:
       - run:
           name: Install Node.js and npm
           command: |
-            curl -fsSL https://deb.nodesource.com/setup_16.x | apk add --no-cache nodejs npm
+            curl -fsSL https://deb.nodesource.com/setup_16.x | bash -
+            apk add --no-cache nodejs npm
             node --version
             npm --version
 
@@ -70,6 +52,20 @@ jobs:
           name: Run Test Script
           command: |
             groovy Jenkins/shared-libraries/src/org/common/unitTest/UnitTestWithNpm.groovy
+
+      - run:
+          name: Download and Install SonarScanner
+          command: |
+            SONAR_SCANNER_VER=4.8.1.3023
+            wget -O /tmp/sonar-scanner-cli-${SONAR_SCANNER_VER}.zip \
+                https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-${SONAR_SCANNER_VER}.zip && \
+            unzip /tmp/sonar-scanner-cli-${SONAR_SCANNER_VER}.zip -d /opt/ && \
+            rm -rf /tmp/sonar-scanner-cli-${SONAR_SCANNER_VER}.zip
+            echo 'export PATH=/opt/sonar-scanner-${SONAR_SCANNER_VER}/bin:$PATH' >> $BASH_ENV
+            sonar-scanner --version || {
+              echo "SonarScanner not found. Please check the installation."
+              exit 1
+            }
 
       - run:
           name: Run SonarScanner
