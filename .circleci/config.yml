@@ -34,10 +34,10 @@ jobs:
             echo 'export JAVA_HOME=/usr/lib/jvm/java-17-openjdk' >> $BASH_ENV
             echo 'export PATH=$JAVA_HOME/bin:$PATH' >> $BASH_ENV
             source $BASH_ENV
-            java -version
-            javac -version
             echo "JAVA_HOME set to: $JAVA_HOME"
             echo "PATH is: $PATH"
+            java -version
+            javac -version
 
       - run:
           name: Install Groovy
