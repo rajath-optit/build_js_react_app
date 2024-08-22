@@ -27,10 +27,12 @@ jobs:
             fi
 
       - run:
-          name: Set JAVA_HOME
+          name: Set JAVA_HOME and PATH
           command: |
             echo 'export JAVA_HOME=/usr/lib/jvm/java-17-openjdk' >> $BASH_ENV
             echo 'export PATH=$JAVA_HOME/bin:$PATH' >> $BASH_ENV
+            source $BASH_ENV
+            java -version
 
       - run:
           name: Install Groovy
@@ -45,11 +47,8 @@ jobs:
           command: |
             echo 'export GROOVY_HOME=/opt/groovy-5.0.0-alpha-9' >> $BASH_ENV
             echo 'export PATH=$GROOVY_HOME/bin:$PATH' >> $BASH_ENV
-
-      - run:
-          name: Verify Groovy Installation
-          command: |
-            groovy --version || /opt/groovy-5.0.0-alpha-9/bin/groovy --version
+            source $BASH_ENV
+            groovy --version
 
       - run:
           name: Install Node.js and npm
@@ -78,6 +77,7 @@ jobs:
             unzip /tmp/sonar-scanner-cli-${SONAR_SCANNER_VER}.zip -d /opt/ && \
             rm -rf /tmp/sonar-scanner-cli-${SONAR_SCANNER_VER}.zip
             echo 'export PATH=/opt/sonar-scanner-${SONAR_SCANNER_VER}/bin:$PATH' >> $BASH_ENV
+            source $BASH_ENV
             sonar-scanner --version || {
               echo "SonarScanner not found. Please check the installation."
               exit 1
