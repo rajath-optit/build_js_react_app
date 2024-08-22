@@ -27,11 +27,13 @@ jobs:
             fi
 
       - run:
-          name: Set JAVA_HOME and PATH
+          name: Set JAVA_HOME and Update PATH
           command: |
-            echo 'export JAVA_HOME=/usr/lib/jvm/java-17-openjdk' >> $BASH_ENV
-            echo 'export PATH=$JAVA_HOME/bin:$PATH' >> $BASH_ENV
+            JAVA_HOME=/usr/lib/jvm/java-17-openjdk
+            echo "export JAVA_HOME=${JAVA_HOME}" >> $BASH_ENV
+            echo "export PATH=${JAVA_HOME}/bin:$PATH" >> $BASH_ENV
             source $BASH_ENV
+            echo "JAVA_HOME is set to $JAVA_HOME"
             java -version
 
       - run:
@@ -43,7 +45,7 @@ jobs:
             chmod +x /opt/groovy-5.0.0-alpha-9/bin/groovy
 
       - run:
-          name: Set GROOVY_HOME and PATH
+          name: Set GROOVY_HOME and Update PATH
           command: |
             echo 'export GROOVY_HOME=/opt/groovy-5.0.0-alpha-9' >> $BASH_ENV
             echo 'export PATH=$GROOVY_HOME/bin:$PATH' >> $BASH_ENV
@@ -74,9 +76,9 @@ jobs:
             SONAR_SCANNER_VER=4.8.1.3023
             wget -O /tmp/sonar-scanner-cli-${SONAR_SCANNER_VER}.zip \
                 https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-${SONAR_SCANNER_VER}.zip && \
-            unzip /tmp/sonar-scanner-cli-${SONAR_SCANNER_VER}.zip -d /opt/ && \
+            unzip /tmp/sonar-scanner-cli-${SONAR_SCANNER_VER}.zip -d /opt/sonar-scanner && \
             rm -rf /tmp/sonar-scanner-cli-${SONAR_SCANNER_VER}.zip
-            echo 'export PATH=/opt/sonar-scanner-${SONAR_SCANNER_VER}/bin:$PATH' >> $BASH_ENV
+            echo 'export PATH=/opt/sonar-scanner/sonar-scanner-${SONAR_SCANNER_VER}/bin:$PATH' >> $BASH_ENV
             source $BASH_ENV
             sonar-scanner --version || {
               echo "SonarScanner not found. Please check the installation."
