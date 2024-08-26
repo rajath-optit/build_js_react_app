@@ -3,36 +3,29 @@ version: 2.1
 executors:
   default:
     docker:
-      - image: circleci/python:3.8  # Use the appropriate Docker image for your environment
+      - image: circleci/python:3.8  # Use the Python 3.8 image or any other base image you prefer
 
 jobs:
   setup:
     executor: default
     steps:
-      - checkout  # Ensure the source code is checked out here
+      - checkout  # Check out the main repository
+
       - run:
-          name: Install Java and Dependencies
+          name: Install Java, Node.js, and Dependencies
           command: |
+            # Update package lists and install Java
             sudo apt-get update
-            sudo apt-get install -y openjdk-11-jdk npm docker.io
-      - run:
-          name: Define Environment Variables
-          command: |
-          
-            echo "export DOCKER_REPO=${DOCKER_REPO}" >> $BASH_ENV
-            echo "export DOCKER_IMAGE_NAME=${DOCKER_IMAGE_NAME}" >> $BASH_ENV
-            echo "export DOCKER_IMAGE_TAG=${DOCKER_IMAGE_TAG}" >> $BASH_ENV
-            echo "export SONAR_PROJECT_KEY=${SONAR_PROJECT_KEY}" >> $BASH_ENV
-            echo "export SONAR_ORGANIZATION=${SONAR_ORGANIZATION}" >> $BASH_ENV
-            echo "export SONAR_SOURCES_DIR=${SONAR_SOURCES_DIR}" >> $BASH_ENV
-            echo "export SONAR_TOKEN=${SONAR_TOKEN}" >> $BASH_ENV
-            source $BASH_ENV
+            sudo apt-get install -y openjdk-11-jdk npm docker.io curl
+
+            # Ensure npm is available
+            sudo ln -sf /usr/bin/npm /usr/local/bin/npm
 
   build:
     executor: default
     steps:
       - run:
-          name: Install Dependencies and Build
+          name: Install npm Dependencies and Build
           command: |
             npm install
             npm run build
@@ -40,16 +33,20 @@ jobs:
   docker_build_and_push:
     executor: default
     steps:
-      - setup_remote_docker
+      - setup_remote_docker:
+          version: 20.10.7  # Adjust Docker version if needed
       - run:
           name: Docker Build
-          command: docker build -t ${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG} .
+          command: |
+            docker build -t ${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG} .
       - run:
           name: Docker Push
-          command: docker push ${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}
+          command: |
+            docker push ${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}
       - run:
           name: Docker Scan
-          command: docker scan ${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}
+          command: |
+            docker scan ${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}
 
   sonar_analysis:
     executor: default
@@ -68,7 +65,9 @@ workflows:
   build_and_deploy:
     jobs:
       - setup
-      - build
+      - build:
+          requires:
+            - setup
       - docker_build_and_push:
           requires:
             - build
