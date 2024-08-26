@@ -3,127 +3,85 @@ version: 2.1
 executors:
   default:
     docker:
-      - image: quay.io/ukhomeofficedigital/aws-alpine-jdk17:v17.0.10
+      - image: circleci/python:3.8  # Use the appropriate Docker image for your environment
 
 jobs:
-  git_checkout:
+  setup:
     executor: default
     steps:
       - checkout
-
       - run:
-          name: Install Basic Utilities
+          name: Install Java and Dependencies
           command: |
-            apk add --no-cache unzip wget curl bash
-
+            sudo apt-get update
+            sudo apt-get install -y openjdk-11-jdk npm docker.io
       - run:
-          name: Check and Install Java 17
+          name: Define Environment Variables
           command: |
-            if ! command -v java >/dev/null 2>&1; then
-              echo "Java not found, installing Java 17..."
-              apk add --no-cache openjdk17-jdk
-            else
-              echo "Java is already installed."
-            fi
-
-      - run:
-          name: Set JAVA_HOME and Update PATH
-          command: |
-            export JAVA_HOME=/usr/lib/jvm/java-17-openjdk
-            export PATH=${JAVA_HOME}/bin:$PATH
-            echo 'export JAVA_HOME=/usr/lib/jvm/java-17-openjdk' >> $BASH_ENV
-            echo 'export PATH=$JAVA_HOME/bin:$PATH' >> $BASH_ENV
+            echo "export GIT_SOURCE_CODE_URL=${GIT_SOURCE_CODE_URL}" >> $BASH_ENV
+            echo "export SOURCE_CODE_BRANCH_NAME=${SOURCE_CODE_BRANCH_NAME}" >> $BASH_ENV
+            echo "export DOCKER_REPO=${DOCKER_REPO}" >> $BASH_ENV
+            echo "export DOCKER_IMAGE_NAME=${DOCKER_IMAGE_NAME}" >> $BASH_ENV
+            echo "export DOCKER_IMAGE_TAG=${DOCKER_IMAGE_TAG}" >> $BASH_ENV
+            echo "export SONAR_PROJECT_KEY=${SONAR_PROJECT_KEY}" >> $BASH_ENV
+            echo "export SONAR_ORGANIZATION=${SONAR_ORGANIZATION}" >> $BASH_ENV
+            echo "export SONAR_SOURCES_DIR=${SONAR_SOURCES_DIR}" >> $BASH_ENV
+            echo "export SONAR_TOKEN=${SONAR_TOKEN}" >> $BASH_ENV
             source $BASH_ENV
-            echo "JAVA_HOME set to: $JAVA_HOME"
-            echo "PATH is: $PATH"
-            java -version
-            javac -version
 
+  checkout_code:
+    executor: default
+    steps:
+      - checkout
       - run:
-          name: Install Groovy
+          name: Checkout Source Code
+          command: git clone ${GIT_SOURCE_CODE_URL} -b ${SOURCE_CODE_BRANCH_NAME}
+
+  build:
+    executor: default
+    steps:
+      - run:
+          name: Install Dependencies and Build
           command: |
-            wget -qO /tmp/groovy.zip https://groovy.jfrog.io/artifactory/dist-release-local/groovy-zips/apache-groovy-binary-5.0.0-alpha-9.zip
-            unzip /tmp/groovy.zip -d /opt
-            ln -sf /opt/groovy-5.0.0-alpha-9/bin/groovy /usr/local/bin/groovy
-            chmod +x /opt/groovy-5.0.0-alpha-9/bin/groovy
+            npm install
+            npm run build
 
+  docker_build_and_push:
+    executor: default
+    steps:
+      - setup_remote_docker
       - run:
-          name: Set GROOVY_HOME and Update PATH
-          command: |
-            echo 'export GROOVY_HOME=/opt/groovy-5.0.0-alpha-9' >> $BASH_ENV
-            echo 'export PATH=$GROOVY_HOME/bin:$PATH' >> $BASH_ENV
-            source $BASH_ENV
-            groovy --version
+          name: Docker Build
+          command: docker build -t ${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG} .
+      - run:
+          name: Docker Push
+          command: docker push ${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}
+      - run:
+          name: Docker Scan
+          command: docker scan ${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}
 
+  sonar_analysis:
+    executor: default
+    steps:
       - run:
-          name: Install Node.js and npm
-          command: |
-            curl -fsSL https://deb.nodesource.com/setup_16.x | bash -
-            apk add --no-cache nodejs npm
-            node --version
-            npm --version
-
-      - run:
-          name: Run Build Script
-          command: |
-            groovy Jenkins/shared-libraries/src/org/common/build/BuildWithNpm.groovy
-
-      - run:
-          name: Run Test Script
-          command: |
-            groovy Jenkins/shared-libraries/src/org/common/unitTest/UnitTestWithNpm.groovy
-
-      - run:
-          name: Download and Install SonarScanner
-          command: |
-            SONAR_SCANNER_VER=4.8.1.3023
-            wget -O /tmp/sonar-scanner-cli-${SONAR_SCANNER_VER}.zip \
-                https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-${SONAR_SCANNER_VER}.zip && \
-            unzip /tmp/sonar-scanner-cli-${SONAR_SCANNER_VER}.zip -d /opt/sonar-scanner && \
-            rm -rf /tmp/sonar-scanner-cli-${SONAR_SCANNER_VER}.zip
-            echo 'export PATH=/opt/sonar-scanner/sonar-scanner-${SONAR_SCANNER_VER}/bin:$PATH' >> $BASH_ENV
-            source $BASH_ENV
-            sonar-scanner --version || {
-              echo "SonarScanner not found. Please check the installation."
-              exit 1
-            }
-
-      - run:
-          name: Run SonarScanner
+          name: SonarQube Analysis
           command: |
             sonar-scanner \
               -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
               -Dsonar.organization=${SONAR_ORGANIZATION} \
               -Dsonar.sources=${SONAR_SOURCES_DIR} \
-              -Dsonar.java.binaries=${SONAR_BINARIES_DIR} \
-              -Dsonar.host.url=https://sonarcloud.io \
-              -Dsonar.login=${SONAR_TOKEN} \
-              > sonar-scanner.log 2>&1 || {
-                echo "SonarScanner failed with exit code $?. See sonar-scanner.log for details."
-                cat sonar-scanner.log
-                exit 1
-              }
-
-      - setup_remote_docker:
-          version: 20.10.7
-
-      - run:
-          name: Build Docker Image
-          command: |
-            groovy Jenkins/shared-libraries/vars/common/dockerUtil/DockerUtil.groovy
-
-      - run:
-          name: Scan Docker Image
-          command: |
-            groovy Jenkins/shared-libraries/vars/common/dockerUtil/DockerScan.groovy
-
-      - run:
-          name: Publish Docker Image
-          command: |
-            groovy Jenkins/shared-libraries/vars/common/containerPublish/DockerHubPublish.groovy
+              -Dsonar.login=${SONAR_TOKEN}
 
 workflows:
   version: 2
-  build:
+  build_and_deploy:
     jobs:
-      - git_checkout
+      - setup
+      - checkout_code
+      - build
+      - docker_build_and_push:
+          requires:
+            - build
+      - sonar_analysis:
+          requires:
+            - build
