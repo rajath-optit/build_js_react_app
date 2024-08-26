@@ -3,85 +3,183 @@ version: 2.1
 executors:
   default:
     docker:
-      - image: ubuntu:latest  # Use Ubuntu base image
+      - image: circleci/python:3.8
 
 jobs:
   setup:
     executor: default
     steps:
-      - checkout  # Check out the main repository
+      - checkout
 
+      # Install required packages
       - run:
-          name: Install Java, Node.js, npm, Docker, and Dependencies
+          name: Install Java and other packages
           command: |
-            # Update package lists
-            apt-get update
+            sudo apt-get update
+            sudo apt-get install -y unzip wget openjdk-11-jdk
 
-            # Install Java
-            apt-get install -y openjdk-11-jdk
+      # Set JAVA_HOME environment variable
+      - run:
+          name: Set JAVA_HOME
+          command: |
+            echo 'export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64' >> $BASH_ENV
+            echo 'export PATH=$JAVA_HOME/bin:$PATH' >> $BASH_ENV
+            source $BASH_ENV
 
-            # Install Docker
-            apt-get install -y docker.io
+      # Install Groovy
+      - run:
+          name: Install Groovy
+          command: |
+            wget https://groovy.jfrog.io/artifactory/dist-release-local/groovy-zips/apache-groovy-binary-5.0.0-alpha-9.zip -O groovy.zip
+            sudo unzip groovy.zip -d /opt
+            sudo ln -sf /opt/groovy-5.0.0-alpha-9/bin/groovy /usr/local/bin/groovy
+            sudo chmod +x /opt/groovy-5.0.0-alpha-9/bin/groovy
 
-            # Install Node.js and npm
+      # Set GROOVY_HOME and update PATH environment variable
+      - run:
+          name: Set GROOVY_HOME
+          command: |
+            echo 'export GROOVY_HOME=/opt/groovy-5.0.0-alpha-9' >> $BASH_ENV
+            echo 'export PATH=$GROOVY_HOME/bin:$PATH' >> $BASH_ENV
+            source $BASH_ENV
+
+      # Verify Groovy installation
+      - run:
+          name: Verify Groovy Installation
+          command: |
+            groovy --version || /opt/groovy-5.0.0-alpha-9/bin/groovy --version
+
+      # Install Node.js and npm
+      - run:
+          name: Install Node.js and npm
+          command: |
             curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
-            apt-get install -y nodejs
+            sudo apt-get install -y nodejs
+            node --version
+            npm --version
 
-            # Verify installations
-            java -version
-            node -v
-            npm -v
-
-  build:
-    executor: default
-    steps:
+      # Debugging: List contents of project directory
       - run:
-          name: Install npm Dependencies and Build
+          name: List Project Files
           command: |
-            npm install
-            npm run build
+            echo "Listing contents of ~/project:"
+            ls -R ~/project
 
-  docker_build_and_push:
-    executor: default
-    steps:
+      # Check script existence
+      - run:
+          name: Check Script Existence
+          command: |
+            cd ~/project
+            if [ -f "Jenkins/shared-libraries/src/org/common/build/BuildWithNpm.groovy" ]; then
+              echo "BuildWithNpm.groovy exists."
+            else
+              echo "BuildWithNpm.groovy does not exist."
+              exit 1
+            fi
+
+      # Define baseDir for the project and execute scripts
+      - run:
+          name: Load and Execute Groovy Scripts
+          command: |
+            cd ~/project
+            baseDir="Jenkins/shared-libraries/src/org/common/build"
+      
+            # Function to load and execute a Groovy script
+            loadAndExecuteGroovyScript() {
+              scriptName=$1
+              scriptPath="${baseDir}/${scriptName}.groovy"
+              echo "Looking for script at ${scriptPath}"
+              if [ -f "${scriptPath}" ]; then
+                echo "Executing ${scriptPath}"
+                groovy ${scriptPath}
+              else
+                echo "Script ${scriptPath} not found!"
+                exit 1
+              fi
+            }
+      
+            # Load and execute required scripts
+            loadAndExecuteGroovyScript "BuildWithNpm"
+
+      # Install dependencies and build React app
+      - run:
+          name: Build App
+          command: |
+            cd ~/project
+            groovy Jenkins/shared-libraries/src/org/common/build/BuildWithNpm.groovy
+
+      # Optionally, run tests or other commands
+      - run:
+          name: Run Tests
+          command: |
+            cd ~/project
+            groovy Jenkins/shared-libraries/src/org/common/unitTest/UnitTestWithNpm.groovy
+
+      # Install SonarQube Scanner
+      - run:
+          name: Install SonarQube Scanner
+          command: |
+            wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.2.2472-linux.zip
+            unzip sonar-scanner-cli-4.6.2.2472-linux.zip
+            sudo mv sonar-scanner-4.6.2.2472-linux /opt/sonar-scanner
+            sudo ln -sf /opt/sonar-scanner/bin/sonar-scanner /usr/local/bin/sonar-scanner
+
+      # Set SonarQube environment variables
+      - run:
+          name: Set SonarQube Environment Variables
+          command: |
+            echo 'export SONAR_SCANNER_HOME=/opt/sonar-scanner' >> $BASH_ENV
+            echo 'export PATH=$SONAR_SCANNER_HOME/bin:$PATH' >> $BASH_ENV
+            source $BASH_ENV
+
+      # Verify SonarQube Scanner installation
+      - run:
+          name: Verify SonarQube Scanner Installation
+          command: |
+            sonar-scanner --version || /opt/sonar-scanner/bin/sonar-scanner --version
+
+      # Build Docker Image
       - setup_remote_docker:
-          version: 20.10.7  # Adjust Docker version if needed
+          version: 20.10.7
       - run:
-          name: Docker Build
+          name: Build Docker Image
           command: |
+            cd ~/project
+            if [ -z "$DOCKER_REPO" ] || [ -z "$DOCKER_IMAGE_NAME" ] || [ -z "$DOCKER_IMAGE_TAG" ]; then
+              echo "Docker environment variables are not set."
+              exit 1
+            fi
             docker build -t ${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG} .
-      - run:
-          name: Docker Push
-          command: |
-            docker push ${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}
-      - run:
-          name: Docker Scan
-          command: |
-            docker scan ${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}
 
-  sonar_analysis:
-    executor: default
-    steps:
+      # Install Trivy
       - run:
-          name: SonarQube Analysis
+          name: Install Trivy
           command: |
-            sonar-scanner \
-              -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
-              -Dsonar.organization=${SONAR_ORGANIZATION} \
-              -Dsonar.sources=${SONAR_SOURCES_DIR} \
-              -Dsonar.login=${SONAR_TOKEN}
+            sudo apt-get install -y wget apt-transport-https gnupg lsb-release
+            wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+            echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | sudo tee -a /etc/apt/sources.list.d/trivy.list
+            sudo apt-get update
+            sudo apt-get install -y trivy
+
+      # Scan Docker Image with Trivy
+      - run:
+          name: Scan Docker Image
+          command: |
+            trivy image ${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}
+
+      # Publish Docker Image
+      - run:
+          name: Publish Docker Image
+          command: |
+            if [ -z "$DOCKER_USERNAME" ] || [ -z "$DOCKER_PASSWORD" ]; then
+              echo "Docker credentials are not set."
+              exit 1
+            fi
+            echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+            docker push ${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}
 
 workflows:
   version: 2
-  build_and_deploy:
+  build:
     jobs:
       - setup
-      - build:
-          requires:
-            - setup
-      - docker_build_and_push:
-          requires:
-            - build
-      - sonar_analysis:
-          requires:
-            - build
