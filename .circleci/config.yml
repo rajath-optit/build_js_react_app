@@ -3,7 +3,7 @@ version: 2.1
 executors:
   default:
     docker:
-      - image: circleci/python:3.8  # Use the Python 3.8 image or any other base image you prefer
+      - image: ubuntu:latest  # Use Ubuntu base image
 
 jobs:
   setup:
@@ -12,14 +12,25 @@ jobs:
       - checkout  # Check out the main repository
 
       - run:
-          name: Install Java, Node.js, and Dependencies
+          name: Install Java, Node.js, npm, Docker, and Dependencies
           command: |
-            # Update package lists and install Java
-            sudo apt-get update
-            sudo apt-get install -y openjdk-11-jdk npm docker.io curl
+            # Update package lists
+            apt-get update
 
-            # Ensure npm is available
-            sudo ln -sf /usr/bin/npm /usr/local/bin/npm
+            # Install Java
+            apt-get install -y openjdk-11-jdk
+
+            # Install Docker
+            apt-get install -y docker.io
+
+            # Install Node.js and npm
+            curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
+            apt-get install -y nodejs
+
+            # Verify installations
+            java -version
+            node -v
+            npm -v
 
   build:
     executor: default
