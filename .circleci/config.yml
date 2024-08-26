@@ -9,7 +9,7 @@ jobs:
   setup:
     executor: default
     steps:
-      - checkout
+      - checkout  # Ensure the source code is checked out here
       - run:
           name: Install Java and Dependencies
           command: |
@@ -18,8 +18,7 @@ jobs:
       - run:
           name: Define Environment Variables
           command: |
-            echo "export GIT_SOURCE_CODE_URL=${GIT_SOURCE_CODE_URL}" >> $BASH_ENV
-            echo "export SOURCE_CODE_BRANCH_NAME=${SOURCE_CODE_BRANCH_NAME}" >> $BASH_ENV
+          
             echo "export DOCKER_REPO=${DOCKER_REPO}" >> $BASH_ENV
             echo "export DOCKER_IMAGE_NAME=${DOCKER_IMAGE_NAME}" >> $BASH_ENV
             echo "export DOCKER_IMAGE_TAG=${DOCKER_IMAGE_TAG}" >> $BASH_ENV
@@ -28,8 +27,6 @@ jobs:
             echo "export SONAR_SOURCES_DIR=${SONAR_SOURCES_DIR}" >> $BASH_ENV
             echo "export SONAR_TOKEN=${SONAR_TOKEN}" >> $BASH_ENV
             source $BASH_ENV
-
- 
 
   build:
     executor: default
@@ -71,7 +68,6 @@ workflows:
   build_and_deploy:
     jobs:
       - setup
-      - checkout_code
       - build
       - docker_build_and_push:
           requires:
