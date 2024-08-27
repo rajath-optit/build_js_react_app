@@ -77,43 +77,20 @@ jobs:
               exit 1
             fi
 
-      # Define baseDir for the project and execute scripts
-      - run:
-          name: Load and Execute Groovy Scripts
-          command: |
-            cd ~/project
-            baseDir="Jenkins/shared-libraries/src/org/common/build"
-      
-            # Function to load and execute a Groovy script
-            loadAndExecuteGroovyScript() {
-              scriptName=$1
-              scriptPath="${baseDir}/${scriptName}.groovy"
-              echo "Looking for script at ${scriptPath}"
-              if [ -f "${scriptPath}" ]; then
-                echo "Executing ${scriptPath}"
-                groovy ${scriptPath}
-              else
-                echo "Script ${scriptPath} not found!"
-                exit 1
-              fi
-            }
-      
-            # Load and execute required scripts
-            loadAndExecuteGroovyScript "BuildWithNpm"
-
       # Install dependencies and build React app
       - run:
           name: Build App
           command: |
             cd ~/project
-            groovy Jenkins/shared-libraries/src/org/common/build/BuildWithNpm.groovy
+            npm install
+            npm run build
 
       # Optionally, run tests or other commands
       - run:
           name: Run Tests
           command: |
             cd ~/project
-            groovy Jenkins/shared-libraries/src/org/common/unitTest/UnitTestWithNpm.groovy
+            npm test
 
       # Install SonarQube Scanner
       - run:
@@ -183,9 +160,3 @@ workflows:
   build:
     jobs:
       - setup
-
-      - setup:
-          filters:
-            branches:
-              only:
-                - master
