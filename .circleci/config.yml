@@ -92,6 +92,19 @@ jobs:
           command: |
             sonar-scanner --version || /opt/sonar-scanner/bin/sonar-scanner --version
 
+      # Run SonarQube Scanner
+      - run:
+          name: Run SonarQube Scanner
+          command: |
+            sonar-scanner \
+              -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+              -Dsonar.organization=${SONAR_ORG} \
+              -Dsonar.sources=. \
+              -Dsonar.host.url=https://sonarcloud.io \
+              -Dsonar.login=${SONAR_TOKEN} \
+              -Dsonar.java.binaries=target/classes \
+              -X
+
       # Build Docker Image
       - setup_remote_docker:
           version: 20.10.7
