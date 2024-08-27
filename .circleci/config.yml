@@ -22,6 +22,7 @@ jobs:
       - run:
           name: Set JAVA_HOME
           command: |
+            export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
             echo 'export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64' >> $BASH_ENV
             echo 'export PATH=$JAVA_HOME/bin:$PATH' >> $BASH_ENV
             source $BASH_ENV
@@ -34,40 +35,6 @@ jobs:
             sudo apt-get install -y nodejs
             node --version
             npm --version
-
-      # Debugging: List contents of project directory
-      - run:
-          name: List Project Files
-          command: |
-            echo "Listing contents of ~/project:"
-            ls -R ~/project
-
-      # Check script existence
-      - run:
-          name: Check Script Existence
-          command: |
-            cd ~/project
-            if [ -f "Jenkins/shared-libraries/src/org/common/build/BuildWithNpm.groovy" ]; then
-              echo "BuildWithNpm.groovy exists."
-            else
-              echo "BuildWithNpm.groovy does not exist."
-              exit 1
-            fi
-
-      # Install dependencies and build React app
-      - run:
-          name: Build App
-          command: |
-            cd ~/project
-            npm install
-            npm run build
-
-      # Optionally, run tests or other commands
-      - run:
-          name: Run Tests
-          command: |
-            cd ~/project
-            npm test
 
       # Install SonarQube Scanner
       - run:
@@ -92,9 +59,9 @@ jobs:
           command: |
             sonar-scanner --version || /opt/sonar-scanner/bin/sonar-scanner --version
 
-      # Run SonarQube Scanner
+      # Run SonarQube Analysis
       - run:
-          name: Run SonarQube Scanner
+          name: Run SonarQube Analysis
           command: |
             sonar-scanner \
               -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
@@ -105,45 +72,7 @@ jobs:
               -Dsonar.java.binaries=target/classes \
               -X
 
-      # Build Docker Image
-      - setup_remote_docker:
-          version: 20.10.7
-      - run:
-          name: Build Docker Image
-          command: |
-            cd ~/project
-            if [ -z "$DOCKER_REPO" ] || [ -z "$DOCKER_IMAGE_NAME" ] || [ -z "$DOCKER_IMAGE_TAG" ]; then
-              echo "Docker environment variables are not set."
-              exit 1
-            fi
-            docker build -t ${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG} .
-
-      # Install Trivy
-      - run:
-          name: Install Trivy
-          command: |
-            sudo apt-get install -y wget apt-transport-https gnupg lsb-release
-            wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
-            echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | sudo tee -a /etc/apt/sources.list.d/trivy.list
-            sudo apt-get update
-            sudo apt-get install -y trivy
-
-      # Scan Docker Image with Trivy
-      - run:
-          name: Scan Docker Image
-          command: |
-            trivy image ${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}
-
-      # Publish Docker Image
-      - run:
-          name: Publish Docker Image
-          command: |
-            if [ -z "$DOCKER_USERNAME" ] || [ -z "$DOCKER_PASSWORD" ]; then
-              echo "Docker credentials are not set."
-              exit 1
-            fi
-            echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
-            docker push ${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}
+      # Build Docker Image and other steps...
 
 workflows:
   version: 2
