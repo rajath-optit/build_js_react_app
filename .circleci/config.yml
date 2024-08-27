@@ -11,14 +11,14 @@ jobs:
     steps:
       - checkout
 
-      # Install required packages including Java 17
+      # Install Java 17
       - run:
           name: Install Java 17
           command: |
             sudo apt-get update
             sudo apt-get install -y openjdk-17-jdk
 
-      # Set Java 17 as the default Java version using update-alternatives
+      # Set Java 17 as the default Java version
       - run:
           name: Set Java 17 as default
           command: |
@@ -26,9 +26,9 @@ jobs:
             sudo update-alternatives --set java /usr/lib/jvm/java-17-openjdk-amd64/bin/java
             java -version
 
-      # Verify JAVA_HOME and PATH
+      # Set JAVA_HOME and update PATH
       - run:
-          name: Set JAVA_HOME and update PATH
+          name: Set JAVA_HOME
           command: |
             export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
             echo 'export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64' >> $BASH_ENV
@@ -73,7 +73,7 @@ jobs:
               -Dsonar.java.binaries=target/classes \
               -X
 
-      # Build Docker Image and other steps...
+      # Additional steps for Docker and other tools...
 
 workflows:
   version: 2
