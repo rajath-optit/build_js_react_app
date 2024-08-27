@@ -18,7 +18,7 @@ jobs:
             sudo apt-get update
             sudo apt-get install -y unzip wget openjdk-17-jdk
 
-      # Set JAVA_HOME environment variable for Java 17
+      # Set JAVA_HOME environment variable for Java 17 testing  with PR
       - run:
           name: Set JAVA_HOME
           command: |
