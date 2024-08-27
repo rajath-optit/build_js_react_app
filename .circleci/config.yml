@@ -13,10 +13,10 @@ jobs:
 
       # Install required packages
       - run:
-          name: Install Java, Node.js, and Docker
+          name: Install Java and other packages
           command: |
             sudo apt-get update
-            sudo apt-get install -y unzip wget openjdk-11-jdk docker.io
+            sudo apt-get install -y unzip wget openjdk-11-jdk
 
       # Set JAVA_HOME environment variable
       - run:
@@ -25,6 +25,29 @@ jobs:
             echo 'export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64' >> $BASH_ENV
             echo 'export PATH=$JAVA_HOME/bin:$PATH' >> $BASH_ENV
             source $BASH_ENV
+
+      # Install Groovy
+      - run:
+          name: Install Groovy
+          command: |
+            wget https://groovy.jfrog.io/artifactory/dist-release-local/groovy-zips/apache-groovy-binary-5.0.0-alpha-9.zip -O groovy.zip
+            sudo unzip groovy.zip -d /opt
+            sudo ln -sf /opt/groovy-5.0.0-alpha-9/bin/groovy /usr/local/bin/groovy
+            sudo chmod +x /opt/groovy-5.0.0-alpha-9/bin/groovy
+
+      # Set GROOVY_HOME and update PATH environment variable
+      - run:
+          name: Set GROOVY_HOME
+          command: |
+            echo 'export GROOVY_HOME=/opt/groovy-5.0.0-alpha-9' >> $BASH_ENV
+            echo 'export PATH=$GROOVY_HOME/bin:$PATH' >> $BASH_ENV
+            source $BASH_ENV
+
+      # Verify Groovy installation
+      - run:
+          name: Verify Groovy Installation
+          command: |
+            groovy --version || /opt/groovy-5.0.0-alpha-9/bin/groovy --version
 
       # Install Node.js and npm
       - run:
@@ -35,11 +58,62 @@ jobs:
             node --version
             npm --version
 
-      # Verify Java installation
+      # Debugging: List contents of project directory
       - run:
-          name: Verify Java Installation
+          name: List Project Files
           command: |
-            java -version
+            echo "Listing contents of ~/project:"
+            ls -R ~/project
+
+      # Check script existence
+      - run:
+          name: Check Script Existence
+          command: |
+            cd ~/project
+            if [ -f "Jenkins/shared-libraries/src/org/common/build/BuildWithNpm.groovy" ]; then
+              echo "BuildWithNpm.groovy exists."
+            else
+              echo "BuildWithNpm.groovy does not exist."
+              exit 1
+            fi
+
+      # Define baseDir for the project and execute scripts
+      - run:
+          name: Load and Execute Groovy Scripts
+          command: |
+            cd ~/project
+            baseDir="Jenkins/shared-libraries/src/org/common/build"
+      
+            # Function to load and execute a Groovy script
+            loadAndExecuteGroovyScript() {
+              scriptName=$1
+              scriptPath="${baseDir}/${scriptName}.groovy"
+              echo "Looking for script at ${scriptPath}"
+              if [ -f "${scriptPath}" ]; then
+                echo "Executing ${scriptPath}"
+                groovy ${scriptPath}
+              else
+                echo "Script ${scriptPath} not found!"
+                exit 1
+              fi
+            }
+      
+            # Load and execute required scripts
+            loadAndExecuteGroovyScript "BuildWithNpm"
+
+      # Install dependencies and build React app
+      - run:
+          name: Build App
+          command: |
+            cd ~/project
+            groovy Jenkins/shared-libraries/src/org/common/build/BuildWithNpm.groovy
+
+      # Optionally, run tests or other commands
+      - run:
+          name: Run Tests
+          command: |
+            cd ~/project
+            groovy Jenkins/shared-libraries/src/org/common/unitTest/UnitTestWithNpm.groovy
 
       # Install SonarQube Scanner
       - run:
@@ -64,40 +138,9 @@ jobs:
           command: |
             sonar-scanner --version || /opt/sonar-scanner/bin/sonar-scanner --version
 
-      # List contents of project directory for debugging
-      - run:
-          name: List Project Files
-          command: |
-            echo "Listing contents of ~/project:"
-            ls -R ~/project
-
-      # Define baseDir for the project and execute necessary commands
-      - run:
-          name: Execute Project Build and Tests
-          command: |
-            cd ~/project
-
-            # Install dependencies and build React app
-            npm install
-            npm run build
-
-            # Optionally run tests
-            npm test
-
-            # Run SonarQube analysis
-            sonar-scanner \
-              -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
-              -Dsonar.organization=${SONAR_ORGANIZATION} \
-              -Dsonar.sources=${SONAR_SOURCES_DIR} \
-              -Dsonar.host.url=https://sonarcloud.io \
-              -Dsonar.login=${SONAR_TOKEN} \
-              -X
-
-      # Setup Docker environment
+      # Build Docker Image
       - setup_remote_docker:
           version: 20.10.7
-
-      # Build Docker Image
       - run:
           name: Build Docker Image
           command: |
@@ -137,11 +180,6 @@ jobs:
 
 workflows:
   version: 2
-  build_and_deploy:
+  build:
     jobs:
-      - setup:
-          filters:
-            branches:
-              ignore: /.*/
-            pull_requests:
-              only: /.*/
+      - setup
