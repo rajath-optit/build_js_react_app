@@ -15,6 +15,6 @@ spec:
     spec:
       containers:
       - name: optit-lab-react-container
-        image: bharathoptdocker/rectjs:latest 
+        image: bharathoptdocker/optit-lab-service:latest 
         ports:
         - containerPort: 80
