@@ -10,48 +10,21 @@ jobs:
     executor: default
     steps:
       - checkout
+      
+      # Set up remote Docker
+      - setup_remote_docker:
+          version: docker23  # Choose a supported Docker version
 
-      # Debugging: List contents of project directory
+      # Check Docker version
       - run:
-          name: List Project Files
+          name: Check Docker Version
           command: |
-            echo "Listing contents of ~/project:"
-            ls -R ~/project
-
-      # Check script existence
-      - run:
-          name: Check Script Existence
-          command: |
-            cd ~/project
-            if [ -f "Jenkins/shared-libraries/src/org/common/build/BuildWithNpm.groovy" ]; then
-              echo "BuildWithNpm.groovy exists."
-            else
-              echo "BuildWithNpm.groovy does not exist."
-              exit 1
-            fi
-
-      # Install dependencies and build React app
-      - run:
-          name: Build App
-          command: |
-            cd ~/project
-            npm install
-            npm run build
-
-      # Optionally, run tests or other commands
-      - run:
-          name: Run Tests
-          command: |
-            cd ~/project
-            npm test
+            docker --version
 
       # Build Docker Image
-      - setup_remote_docker:
-          version: docker23  # Use a supported version here
       - run:
           name: Build Docker Image
           command: |
-            cd ~/project
             if [ -z "$DOCKER_REPO" ] || [ -z "$DOCKER_IMAGE_NAME" ] || [ -z "$DOCKER_IMAGE_TAG" ]; then
               echo "Docker environment variables are not set."
               exit 1
