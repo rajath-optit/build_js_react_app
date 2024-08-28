@@ -10,7 +10,7 @@ jobs:
     steps:
       - checkout
 
-      # Debugging: List contents of project directory
+      # Debugging: List contents of project directory 
       - run:
           name: List Project Files
           command: |
