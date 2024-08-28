@@ -11,7 +11,7 @@ jobs:
     steps:
       - checkout
 
-      # Install required packages including Java 17
+      # Install required packages including Java 17 .
       - run:
           name: Install Java 17 and other packages
           command: |
