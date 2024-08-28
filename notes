@@ -1,0 +1,1 @@
+To use Groovy in CircleCI, you would need to have Groovy installed in your build environment and then run the Groovy scripts as part of your build steps. Here’s how you can set it up.

@@ -1,0 +1,81 @@
+@Library('shared-libraries') _
+
+pipeline {
+    agent any
+
+    parameters {
+        string(name: 'GIT_URL', description: 'Git repository URL for helm-chart')
+        string(name: 'GIT_BRANCH_NAME', description: 'Source Code Branch to deploy')
+        credentials(name: 'GIT_CREDENTIAL', description: 'Jenkins credential for Git repo', required: true)
+        string(name: 'HELM_CHART_PATH', description: 'Path to the Helm chart directory')
+        string(name: 'HELM_RELEASE_NAME', description: 'Helm release name')
+        string(name: 'NAMESPACE', description: 'Kubernetes namespace')
+        string(name: 'IMAGE_NAME', description: 'Docker image name')
+        string(name: 'IMAGE_TAG', description: 'Docker image tag')
+        credentials(name: 'KUBE_CONFIG_CREDENTIAL', description: 'Jenkins credential for Kubernetes config file (kubeconfig)', required: true)
+    }
+
+    stages {
+        stage('Load Scripts') {
+            steps {
+                script {
+                    // Define baseDir for Jenkins shared libraries
+                    def baseDir = "${env.WORKSPACE}/Jenkins/shared-libraries"
+
+                    // Load scripts using dynamically constructed paths
+                    def loadScript = { type, technology, scriptName ->
+                        def scriptPath = "${baseDir}/${type}/${technology}/${scriptName}.groovy"
+                        return load(scriptPath)
+                    }
+
+                    // Load scripts from 'vars' directory
+                    gitCheckoutScript = loadScript('vars/common/scm-util', 'git', 'GitCheckout')
+                    deployWithHelmScript = loadScript('vars/common', 'Deploy', 'HelmDeploy')
+                }
+            }
+        }
+
+        stage('Git Checkout') {
+            steps {
+                script {
+                    gitCheckoutScript.gitCheckout(params.GIT_BRANCH_NAME, params.GIT_URL, params.GIT_CREDENTIAL)
+                }
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                script {
+                    // Retrieve the kubeconfig file from Jenkins credentials
+                    withCredentials([file(credentialsId: params.KUBE_CONFIG_CREDENTIAL, variable: 'KUBECONFIG_FILE')]) {
+                        def kubeconfigDir = "${env.WORKSPACE}/.kube"
+                        def kubeconfigPath = "${kubeconfigDir}/config"
+                        sh """
+                            mkdir -p ${kubeconfigDir} 
+                        """
+                          writeFile file: kubeconfigPath, text: sh(returnStdout: true, script: "cat ${KUBECONFIG_FILE}")
+ 
+                        // Ensure proper permissions (chmod 600) on the kubeconfig file
+                        sh "chmod 600 ${kubeconfigPath}"
+                        
+                        withEnv(["KUBECONFIG=${kubeconfigPath}"]) {
+                            // Add debug statements to confirm the paths and environment variable
+                            sh "echo 'Using kubeconfig at: ${kubeconfigPath}'"
+                            sh "echo 'KUBECONFIG environment variable: ${env.KUBECONFIG}'"
+                         
+                        // Path to the Helm chart directory
+                        def helmChartPath = "${env.WORKSPACE}/${params.HELM_CHART_PATH}"
+                        def imageName = params.IMAGE_NAME
+                        def imageTag = params.IMAGE_TAG
+                       
+
+                        // Call the deployWithHelm function from the shared library
+                        deployWithHelmScript.deployWithHelm(helmChartPath, params.HELM_RELEASE_NAME, params.NAMESPACE, imageName, imageTag)
+                    
+                        }    
+                    }
+                }
+            }
+        }
+    }
+}

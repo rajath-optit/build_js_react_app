@@ -1,0 +1,5 @@
+---
+- name: greetimg message
+  debug:
+      msg: "{{ key1 }} = {{ value1 }}!, {{ key2 }} = {{ value2 }}!"
+      

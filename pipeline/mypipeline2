@@ -1,0 +1,110 @@
+@Library('shared-libraries') _
+
+pipeline {
+    agent any
+    
+    parameters {
+    
+        string(name: 'GIT_SOURCE_CODE_URL', description: 'Git repository URL for source code')
+        string(name: 'SOURCE_CODE_BRANCH_NAME', description: 'Source Code Branch to build')
+        credentials(name: 'GIT_SOURCE_CODE_CREDENTIAL', description: 'Jenkins credential for source code Git repo', required: true)
+        string(name: 'DOCKER_REPO', description: 'Docker repository')
+        string(name: 'DOCKER_IMAGE_NAME', description: 'Docker image name')
+        string(name: 'DOCKER_IMAGE_TAG', description: 'Docker image tag')
+        credentials(name: 'DOCKER_CREDENTIAL', description: 'Jenkins credential for DockerHub', required: true)
+        string(name: 'SONAR_PROJECT_KEY', description: 'SonarQube project key')
+        string(name: 'SONAR_ORGANIZATION', description: 'SonarQube organization key')
+        string(name: 'SONAR_SOURCES_DIR', description: 'Source code directory for SonarQube analysis')
+        credentials(name: 'SONAR_TOKEN', description: 'SonarQube authentication token', required: true)
+       
+    }
+
+    stages {
+        stage('Load Scripts') {
+            steps {
+                script {
+                    // Define baseDir for Jenkins shared libraries
+                    def baseDir = "${env.WORKSPACE}/Jenkins/shared-libraries"
+
+                    // Load scripts using dynamically constructed paths
+                    def loadScript = { type, technology, scriptName ->
+                        def scriptPath = "${baseDir}/${type}/${technology}/${scriptName}.groovy"
+                        return load(scriptPath)
+                    }
+
+                    // Load scripts from 'vars' directory
+                    gitCheckoutScript = loadScript('vars/common/scm-util', 'git', 'GitCheckout')
+                    sonarScript = loadScript('vars/common', 'codeAnalysis', 'PerformSonarAnalysisForReactjs')
+                    dockerBuildScript = loadScript('vars/common', 'dockerUtil', 'DockerUtil')
+                    dockerPublishScript = loadScript('vars/common', 'containerPublish', 'DockerHubPublish')
+
+                    // Load scripts from 'src' directory
+                    buildWithNpmScript = loadScript('src/org/common', 'build', 'BuildWithNpm')
+                    unitTestWithNpmScript = loadScript('src/org/common', 'unitTest', 'UnitTestWithNpm')
+                }
+            }
+        }
+
+        stage('Git Checkout Source Code Repo') {
+            steps {
+                script {
+                    gitCheckoutScript.gitCheckout(params.SOURCE_CODE_BRANCH_NAME, params.GIT_SOURCE_CODE_URL, params.GIT_SOURCE_CODE_CREDENTIAL)
+                }
+            }
+        }
+
+        stage('Build') {
+            steps {
+                script {
+                    // Example usage of loaded build script
+                    buildWithNpmScript.build()
+                }
+            }
+        }
+
+        stage('Unit Test') {
+            steps {
+                script {
+                    // Example usage of loaded test script
+                    unitTestWithNpmScript.unitTest()
+                }
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                script {
+                    sonarScript.performSonarCloudAnalysis(
+                        params.SONAR_PROJECT_KEY, 
+                        params.SONAR_ORGANIZATION, 
+                        params.SONAR_SOURCES_DIR, 
+                        params.SONAR_TOKEN
+                    )
+                }
+            }
+        }
+
+        stage('Docker Build') {
+            steps {
+                script {
+                    dockerBuildScript.dockerBuild(params.DOCKER_IMAGE_NAME, params.DOCKER_IMAGE_TAG)
+                }
+            }
+        }
+        
+        stage('Docker Publish') {
+            steps {
+                script {
+                    dockerPublishScript.publishToContainer(params.DOCKER_IMAGE_NAME, params.DOCKER_REPO, params.DOCKER_IMAGE_TAG, params.DOCKER_CREDENTIAL)
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            // Clean up or post-processing steps, if any
+            echo 'Pipeline execution completed.'
+        }
+    }
+}

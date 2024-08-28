@@ -1,0 +1,99 @@
+@Library('shared-libraries') _
+def gitCheckoutScript
+def buildWithGradleScript
+def sonarscript
+def dockerBuildScript
+def dockerPublishscript
+def dockerScanScript
+
+pipeline {
+    agent any
+
+    parameters {
+        string(name: 'DSL_GIT_URL', defaultValue: 'https://github.com/optimize-it/CICD.git', description: 'Git repository URL for shared library')
+        string(name: 'DSL_BRANCH_NAME', defaultValue: 'main', description: 'Shared Library Branch')
+        credentials(name: 'GIT_DSL_CREDENTIAL', description: 'Jenkins credential for shared library Git repo', defaultValue: 'bkgit', required: true)
+        string(name: 'GIT_SOURCE_CODE_URL', defaultValue: 'https://github.com/optit-cloud-team/optit-lab-service.git', description: 'Git repository URL for source code')
+        string(name: 'SOURCE_CODE_BRANCH_NAME', defaultValue: 'main', description: 'Source Code Branch to build')
+        credentials(name: 'GIT_SOURCE_CODE_CREDENTIAL', description: 'Jenkins credential for source code Git repo', defaultValue: 'git-PAT', required: true)
+        string(name: 'DOCKER_REPO', defaultValue: 'bharathoptdocker', description: 'Docker repository')
+        string(name: 'DOCKER_IMAGE_NAME', defaultValue: 'reactjs', description: 'Docker image name')
+        credentials(name: 'DOCKER_CREDENTIAL', description: 'Jenkins credential for dockerHub', defaultValue: 'bkdockerid', required: true)
+        string(name: 'SONAR_PROJECT_KEY', defaultValue: 'bharathkoptit_build_js_react_app', description: 'SonarQube project key')
+        string(name: 'SONAR_ORGANIZATION', defaultValue: 'myorg24', description: 'SonarQube organization key')
+        string(name: 'SONAR_SOURCES_DIR', defaultValue: '.', description: 'Source code directory for SonarQube analysis')
+        string(name: 'SONAR_BINARIES_DIR', defaultValue: 'build/classes', description: 'Binary directory for SonarQube analysis')
+        string(name: 'SONAR_TOKEN', defaultValue: '58e855db57da8fe8f37ff95cb82871d74f751aa6', description: 'SonarQube authentication token')
+    }
+
+    stages {
+       
+        
+        stage('Load DSL') {
+            steps {
+                script {
+                    gitCheckoutScript = load '/Jenkins/shared-libraries/vars/common/scm-util/git/GitCheckout.groovy'
+                    buildWithGradleScript = load '/Jenkins/shared-libraries/src/org/common/build/Reactjs/BuildWithReactjs.groovy'
+                    sonarscript = load 'Jenkins/shared-libraries/vars/common/code-analysis/sonarqube-util/sonarCloudAnalysis.groovy'
+                    dockerBuildScript = load '/Jenkins/shared-libraries/vars/common/docker-util/DockerBuild.groovy'
+                    dockerPublishscript = load '/Jenkins/shared-libraries/vars/common/docker-util/DockerPublish.groovy'
+                    dockerScanScript = load '/Jenkins/shared-libraries/vars/common/docker-util/dockerScan.groovy'
+                }
+            }
+        }
+
+        stage('Git Checkout') {
+            steps {
+                script {
+                    gitCheckoutScript.gitCheckout(params.SOURCE_CODE_BRANCH_NAME, params.GIT_SOURCE_CODE_URL, params.GIT_SOURCE_CODE_CREDENTIAL)
+                }
+            }
+        }
+
+        stage('Build with React') {
+            steps {
+                script {
+                    buildWithGradleScript.buildWithNpm()
+                }
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                script {
+                    sonarscript.sonarCloudAnalysis(
+                        params.SONAR_PROJECT_KEY,
+                        params.SONAR_ORGANIZATION,
+                        params.SONAR_SOURCES_DIR,
+                        params.SONAR_BINARIES_DIR,
+                        params.SONAR_TOKEN
+                    )
+                }
+            }
+        }
+
+        stage('Docker Build') {
+            steps {
+                script {
+                    dockerBuildScript.dockerBuild(params.DOCKER_IMAGE_NAME)
+                }
+            }
+        }
+
+        stage('Docker Scan') {
+            steps {
+                script {
+                    dockerScanScript.dockerScan(params.DOCKER_IMAGE_NAME)
+                }
+            }
+        }
+
+        stage('Docker Publish') {
+            steps {
+                script {
+                    dockerPublishscript.dockerPublish(params.DOCKER_IMAGE_NAME, params.DOCKER_REPO, params.DOCKER_CREDENTIAL)
+                }
+            }
+        }
+    }
+}

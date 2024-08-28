@@ -1,0 +1,92 @@
+version: 2.1
+
+executors:
+  default:
+    docker:
+      - image: circleci/python:3.8
+
+jobs:
+  setup:
+    executor: default
+    steps:
+      - checkout # Check out the main repository with shared libraries
+
+      # Install Java, Groovy, and other dependencies
+      - run:
+          name: Install Java and Groovy
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y openjdk-11-jdk unzip wget
+            wget https://groovy.jfrog.io/artifactory/dist-release-local/groovy-zips/apache-groovy-binary-5.0.0-alpha-9.zip -O groovy.zip
+            sudo unzip groovy.zip -d /opt
+            sudo ln -sf /opt/groovy-5.0.0-alpha-9/bin/groovy /usr/local/bin/groovy
+            sudo chmod +x /opt/groovy-5.0.0-alpha-9/bin/groovy
+            echo 'export GROOVY_HOME=/opt/groovy-5.0.0-alpha-9' >> $BASH_ENV
+            echo 'export PATH=$GROOVY_HOME/bin:$PATH' >> $BASH_ENV
+            source $BASH_ENV
+
+      - run:
+          name: Define Environment Variables
+          command: |
+            echo "export GIT_SOURCE_CODE_URL=${GIT_SOURCE_CODE_URL}" >> $BASH_ENV
+            echo "export SOURCE_CODE_BRANCH_NAME=${SOURCE_CODE_BRANCH_NAME}" >> $BASH_ENV
+            echo "export DOCKER_REPO=${DOCKER_REPO}" >> $BASH_ENV
+            echo "export DOCKER_IMAGE_NAME=${DOCKER_IMAGE_NAME}" >> $BASH_ENV
+            echo "export DOCKER_IMAGE_TAG=${DOCKER_IMAGE_TAG}" >> $BASH_ENV
+            echo "export SONAR_PROJECT_KEY=${SONAR_PROJECT_KEY}" >> $BASH_ENV
+            echo "export SONAR_ORGANIZATION=${SONAR_ORGANIZATION}" >> $BASH_ENV
+            echo "export SONAR_SOURCES_DIR=${SONAR_SOURCES_DIR}" >> $BASH_ENV
+            echo "export SONAR_TOKEN=${SONAR_TOKEN}" >> $BASH_ENV
+            source $BASH_ENV
+
+      - run:
+          name: Define Groovy Scripts Location
+          command: |
+            echo "export BASE_DIR=${CIRCLE_WORKING_DIRECTORY}/shared-libraries" >> $BASH_ENV
+            source $BASH_ENV
+
+      # Run the Groovy pipeline and capture logs
+      - run:
+          name: Run Pipeline with Groovy
+          command: |
+            mkdir -p reports
+            groovy ${BASE_DIR}/vars/common/scm-util/git/GitCheckout.groovy \
+              --gitSourceCodeUrl ${GIT_SOURCE_CODE_URL} \
+              --sourceCodeBranchName ${SOURCE_CODE_BRANCH_NAME} \
+              --gitSourceCodeCredential ${GIT_SOURCE_CODE_CREDENTIAL} > reports/git-checkout.log 2>&1
+            cat reports/git-checkout.log
+            
+            groovy ${BASE_DIR}/src/org/common/build/BuildWithNpm.groovy \
+              --dockerRepo ${DOCKER_REPO} \
+              --dockerImageName ${DOCKER_IMAGE_NAME} \
+              --dockerImageTag ${DOCKER_IMAGE_TAG} > reports/build.log 2>&1
+            cat reports/build.log
+
+            groovy ${BASE_DIR}/vars/common/dockerUtil/DockerUtil.groovy \
+              --dockerImageName ${DOCKER_IMAGE_NAME} \
+              --dockerImageTag ${DOCKER_IMAGE_TAG} > reports/docker-util.log 2>&1
+            cat reports/docker-util.log
+
+            groovy ${BASE_DIR}/vars/common/containerPublish/DockerHubPublish.groovy \
+              --dockerImageName ${DOCKER_IMAGE_NAME} \
+              --dockerRepo ${DOCKER_REPO} \
+              --dockerImageTag ${DOCKER_IMAGE_TAG} \
+              --dockerCredential ${DOCKER_CREDENTIAL} > reports/docker-publish.log 2>&1
+            cat reports/docker-publish.log
+
+            groovy ${BASE_DIR}/vars/common/dockerUtil/DockerScan.groovy \
+              --dockerImageName ${DOCKER_IMAGE_NAME} > reports/docker-scan.log 2>&1
+            cat reports/docker-scan.log
+
+            groovy ${BASE_DIR}/vars/common/codeAnalysis/PerformSonarAnalysisForReactjs.groovy \
+              --sonarProjectKey ${SONAR_PROJECT_KEY} \
+              --sonarOrganization ${SONAR_ORGANIZATION} \
+              --sonarSourcesDir ${SONAR_SOURCES_DIR} \
+              --sonarToken ${SONAR_TOKEN} > reports/sonar-analysis.log 2>&1
+            cat reports/sonar-analysis.log
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - setup
