@@ -1,4 +1,5 @@
 version: 2.1
+
 executors:
   default:
     docker:
@@ -10,7 +11,7 @@ jobs:
     steps:
       - checkout
 
-      # Debugging: List contents of project directory 
+      # Debugging: List contents of project directory
       - run:
           name: List Project Files
           command: |
@@ -46,7 +47,7 @@ jobs:
 
       # Build Docker Image
       - setup_remote_docker:
-          version: 20.10.7
+          version: docker23  # Use a supported version here
       - run:
           name: Build Docker Image
           command: |
