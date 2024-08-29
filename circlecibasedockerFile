@@ -1,0 +1,56 @@
+# Use the official CircleCI base image for Ubuntu 22.04
+FROM cimg/base:2024.08
+
+# Ensure proper permissions and update the package list
+USER root
+RUN mkdir -p /var/lib/apt/lists/partial && \
+    apt-get update -y && \
+    apt-get upgrade -y
+
+# Install basic dependencies, Java 17, Node.js, npm, and Trivy
+RUN apt-get install -y --no-install-recommends \
+    unzip \
+    wget \
+    curl \
+    openjdk-17-jdk \
+    nodejs \
+    npm \
+    apt-transport-https \
+    gnupg \
+    lsb-release
+
+# Install SonarQube Scanner
+RUN wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.2.2472-linux.zip && \
+    unzip sonar-scanner-cli-4.6.2.2472-linux.zip -d /opt/ && \
+    ln -s /opt/sonar-scanner-4.6.2.2472-linux/bin/sonar-scanner /usr/local/bin/sonar-scanner && \
+    rm sonar-scanner-cli-4.6.2.2472-linux.zip
+
+# Install Trivy
+RUN wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | tee /usr/share/keyrings/trivy.asc && \
+    echo "deb [signed-by=/usr/share/keyrings/trivy.asc] https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | tee /etc/apt/sources.list.d/trivy.list && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends trivy
+
+# Clean up unnecessary files to reduce image size
+RUN apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Set environment variables for Java and SonarQube Scanner
+ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+ENV SONAR_SCANNER_HOME=/opt/sonar-scanner-4.6.2.2472-linux
+ENV PATH="$JAVA_HOME/bin:$SONAR_SCANNER_HOME/bin:$PATH"
+
+# Verify installations of Java, Node.js, npm, SonarQube Scanner, and Trivy
+RUN java -version && \
+    node --version && \
+    npm --version && \
+    sonar-scanner --version && \
+    trivy --version
+
+# Set the working directory
+WORKDIR /workspace
+
+# Optionally set the entrypoint to bash for interactive use
+# ENTRYPOINT ["/bin/bash"]
+
+# Ensure that the container runs in an interactive mode by default
+CMD ["/bin/bash"]

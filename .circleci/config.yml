@@ -1,0 +1,46 @@
+version: 2.1
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:2024.08
+    steps:
+      - checkout
+
+      # Install Java 17
+      - run:
+          name: Install Java 17
+          command: |
+            sudo apt-get update && sudo apt-get install -y openjdk-17-jdk
+
+      # Install SonarQube Scanner 
+      - run:
+          name: Install SonarQube Scanner
+          command: |
+            wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.2.2472-linux.zip
+            unzip sonar-scanner-cli-4.6.2.2472-linux.zip -d /opt/
+            ln -s /opt/sonar-scanner-4.6.2.2472-linux/bin/sonar-scanner /usr/local/bin/sonar-scanner
+            rm sonar-scanner-cli-4.6.2.2472-linux.zip
+
+      # Run SonarQube Scanner
+      - run:
+          name: SonarCloud Analysis
+          command: |
+            sonar-scanner \
+            -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+            -Dsonar.organization=${SONAR_ORGANIZATION} \
+            -Dsonar.sources=${SONAR_SOURCES_DIR} \
+            -Dsonar.host.url=https://sonarcloud.io \
+            -Dsonar.login=${SONAR_TOKEN} \
+            -X
+    environment:
+      SONAR_PROJECT_KEY: your_project_key
+      SONAR_ORGANIZATION: your_organization
+      SONAR_SOURCES_DIR: your_sources_directory
+      SONAR_TOKEN: your_sonarcloud_token
+
+workflows:
+  version: 2
+  build_and_test:
+    jobs:
+      - build
