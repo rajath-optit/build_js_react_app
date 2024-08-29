@@ -1,13 +1,13 @@
 # Use the official CircleCI base image for Ubuntu 22.04
 FROM cimg/base:2024.08
 
-# Ensure proper permissions and update the package list 
+# Ensure proper permissions and update the package list
 USER root
 RUN mkdir -p /var/lib/apt/lists/partial && \
     apt-get update -y && \
     apt-get upgrade -y
 
-# Install basic dependencies, Java, Node.js, npm, and Trivy
+# Install basic dependencies, Java 17, Node.js, npm, and Trivy
 RUN apt-get install -y --no-install-recommends \
     unzip \
     wget \
