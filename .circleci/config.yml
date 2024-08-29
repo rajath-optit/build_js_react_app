@@ -66,16 +66,17 @@ jobs:
           name: Print Environment Variables
           command: |
             echo "SONAR_HOST_URL: $SONAR_HOST_URL"
-            echo "SONAR_LOGIN: $SONAR_LOGIN"
+            echo "SONAR_PROJECT_KEY: $SONAR_PROJECT_KEY"
+            echo "SONAR_SOURCES_DIR: $SONAR_SOURCES_DIR"
 
       - run:
           name: Run SonarQube Scan
           command: |
             sonar-scanner \
-            -Dsonar.projectKey=my-react-project \
-            -Dsonar.sources=src \
+            -Dsonar.projectKey=$SONAR_PROJECT_KEY \
+            -Dsonar.sources=$SONAR_SOURCES_DIR \
             -Dsonar.host.url=$SONAR_HOST_URL \
-            -Dsonar.login=$SONAR_LOGIN
+            -Dsonar.login=$SONAR_TOKEN
 
 workflows:
   version: 2
