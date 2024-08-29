@@ -11,7 +11,7 @@ jobs:
     steps:
       - checkout
 
-      # Your build steps here
+      # Build the application
       - run:
           name: Build App
           command: |
@@ -19,20 +19,24 @@ jobs:
             npm install
             npm run build
 
+      # Run tests
       - run:
           name: Run Tests
           command: |
             cd ~/project
             npm test
 
+      # Verify SonarQube Scanner Installation
       - run:
           name: Verify SonarQube Scanner Installation
           command: |
             sonar-scanner --version
 
+      # Set up remote Docker for building and scanning Docker images
       - setup_remote_docker:
           docker_layer_caching: true
 
+      # Build Docker image
       - run:
           name: Build Docker Image
           command: |
@@ -43,11 +47,17 @@ jobs:
             fi
             docker build -t ${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG} .
 
+      # Scan Docker image using Trivy
       - run:
           name: Scan Docker Image
           command: |
+            if [ -z "$DOCKER_REPO" ] || [ -z "$DOCKER_IMAGE_NAME" ] || [ -z "$DOCKER_IMAGE_TAG" ]; then
+              echo "Docker environment variables are not set."
+              exit 1
+            fi
             trivy image ${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}
 
+      # Publish Docker image
       - run:
           name: Publish Docker Image
           command: |
@@ -57,6 +67,16 @@ jobs:
             fi
             echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
             docker push ${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}
+
+      # Run SonarQube analysis
+      - run:
+          name: Run SonarQube Scan
+          command: |
+            sonar-scanner \
+            -Dsonar.projectKey=my-react-project \
+            -Dsonar.sources=src \
+            -Dsonar.host.url=$SONAR_HOST_URL \
+            -Dsonar.login=$SONAR_LOGIN
 
 workflows:
   version: 2
