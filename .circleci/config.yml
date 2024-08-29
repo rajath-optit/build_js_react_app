@@ -3,7 +3,7 @@ version: 2.1
 executors:
   custom-docker:
     docker:
-      - image: bharathoptdocker/nodjs-java17-trivy:latest
+      - image: bharathoptdocker/nodjs-java17-trivy:latest  # Use your custom Docker image
 
 jobs:
   setup:
@@ -11,6 +11,7 @@ jobs:
     steps:
       - checkout
 
+      # Build steps
       - run:
           name: Build App
           command: |
@@ -28,10 +29,6 @@ jobs:
           name: Verify SonarQube Scanner Installation
           command: |
             sonar-scanner --version
-
-      - run:
-          name: Print SonarQube URL
-          command: echo "SONAR_HOST_URL: $SONAR_HOST_URL"
 
       - setup_remote_docker:
           docker_layer_caching: true
@@ -64,6 +61,12 @@ jobs:
             fi
             echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
             docker push ${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}
+
+      - run:
+          name: Print Environment Variables
+          command: |
+            echo "SONAR_HOST_URL: $SONAR_HOST_URL"
+            echo "SONAR_LOGIN: $SONAR_LOGIN"
 
       - run:
           name: Run SonarQube Scan
