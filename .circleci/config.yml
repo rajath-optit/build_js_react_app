@@ -3,7 +3,7 @@ version: 2.1
 executors:
   custom-docker:
     docker:
-      - image: your-dockerhub-username/bharathoptdocker/nodjs-java17-trivy:latest  # Use your custom Docker image
+      - image: your-dockerhub-username/bharathoptdocker/nodjs-java17-trivy:latest  # Use your custom Docker image 
 
 jobs:
   setup:
