@@ -46,7 +46,9 @@ jobs:
             sonar-scanner --version || /opt/sonar-scanner/bin/sonar-scanner --version
 
       - setup_remote_docker:
-          version: 20.10.7
+          version: 24.0.2  # Updated Docker version
+          docker_layer_caching: true
+
       - run:
           name: Build Docker Image
           command: |
