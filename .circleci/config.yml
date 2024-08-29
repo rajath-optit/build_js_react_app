@@ -3,7 +3,7 @@ version: 2.1
 executors:
   custom-docker:
     docker:
-      - image: bharathoptdocker/nodjs-java17-trivy:latest  # Use your custom Docker image
+      - image: bharathoptdocker/nodjs-java17-trivy:latest  # Replace with your custom Docker image
 
 jobs:
   setup:
@@ -30,11 +30,9 @@ jobs:
           command: |
             sonar-scanner --version
 
-      # Setup remote Docker for building and scanning images
       - setup_remote_docker:
           docker_layer_caching: true
 
-      # Build Docker Image
       - run:
           name: Build Docker Image
           command: |
@@ -45,7 +43,6 @@ jobs:
             fi
             docker build -t ${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG} .
 
-      # Scan Docker Image with Trivy
       - run:
           name: Scan Docker Image
           command: |
@@ -55,7 +52,6 @@ jobs:
             fi
             trivy image ${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}
 
-      # Publish Docker Image to Docker Registry
       - run:
           name: Publish Docker Image
           command: |
@@ -66,7 +62,6 @@ jobs:
             echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
             docker push ${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}
 
-      # Print environment variables for debugging
       - run:
           name: Print Environment Variables
           command: |
@@ -74,15 +69,17 @@ jobs:
             echo "SONAR_PROJECT_KEY: $SONAR_PROJECT_KEY"
             echo "SONAR_SOURCES_DIR: $SONAR_SOURCES_DIR"
 
-      # Run SonarQube scan
       - run:
-          name: Run SonarQube Scan
+          name: Run SonarCloud Analysis
           command: |
             sonar-scanner \
             -Dsonar.projectKey=$SONAR_PROJECT_KEY \
+            -Dsonar.organization=$SONAR_ORGANIZATION \
             -Dsonar.sources=$SONAR_SOURCES_DIR \
-            -Dsonar.host.url=$SONAR_HOST_URL \
-            -Dsonar.login=$SONAR_TOKEN
+            -Dsonar.java.binaries=$SONAR_BINARIES_DIR \
+            -Dsonar.host.url=https://sonarcloud.io \
+            -Dsonar.login=$SONAR_TOKEN \
+            -X
 
 workflows:
   version: 2
