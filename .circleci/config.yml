@@ -3,7 +3,7 @@ version: 2.1
 executors:
   default:
     docker:
-      - image: bharathoptdocker/nodjs-java17-trivy:latest
+      - image: bharathoptdocker/nodjs-java17-trivy:latest  # Custom Docker image
 
 jobs:
   setup:
