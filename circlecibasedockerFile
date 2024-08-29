@@ -1,4 +1,4 @@
-# Use the official Ubuntu 22.04 as the base image
+# Use the official CircleCI base image for Ubuntu 22.04
 FROM cimg/base:2024.08
 
 # Ensure proper permissions and update the package list
@@ -46,8 +46,11 @@ RUN java -version && \
     sonar-scanner --version && \
     trivy --version
 
-# Set the working directory (optional but useful)
+# Set the working directory
 WORKDIR /workspace
 
-# Set the entrypoint to bash if needed
+# Optionally set the entrypoint to bash for interactive use
 # ENTRYPOINT ["/bin/bash"]
+
+# Ensure that the container runs in an interactive mode by default
+CMD ["/bin/bash"]
