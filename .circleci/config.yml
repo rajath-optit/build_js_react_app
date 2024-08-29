@@ -10,34 +10,92 @@ jobs:
     executor: default
     steps:
       - checkout
-      
-      # Set up remote Docker
-      - setup_remote_docker:
-          version: docker23  # Choose a supported Docker version 
 
-      # Check Docker version 
+      # Build React app
       - run:
-          name: Check Docker Version
+          name: Build App
           command: |
-            docker --version
+            cd ~/project
+            npm install
+            npm run build
 
-      # Build Docker Image
+      # Run unit tests
+      - run:
+          name: Run Unit Tests
+          command: |
+            cd ~/project
+            npm test
+
+  sonar_scan:
+    executor: default
+    steps:
+      - checkout
+
+      # Install SonarQube Scanner
+      - run:
+          name: Install SonarQube Scanner
+          command: |
+            wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.2.2472-linux.zip
+            unzip sonar-scanner-cli-4.6.2.2472-linux.zip
+            sudo mv sonar-scanner-4.6.2.2472-linux /opt/sonar-scanner
+            sudo ln -sf /opt/sonar-scanner/bin/sonar-scanner /usr/local/bin/sonar-scanner
+            echo 'export SONAR_SCANNER_HOME=/opt/sonar-scanner' >> $BASH_ENV
+            echo 'export PATH=$SONAR_SCANNER_HOME/bin:$PATH' >> $BASH_ENV
+            source $BASH_ENV
+            sonar-scanner --version || /opt/sonar-scanner/bin/sonar-scanner --version
+
+      # Run SonarQube scan
+      - run:
+          name: Run SonarQube Scan
+          command: |
+            cd ~/project
+            sonar-scanner
+
+  docker_build:
+    executor: default
+    steps:
+      - checkout
+
+      # Build Docker image
+      - setup_remote_docker:
+          version: 20.10.7
       - run:
           name: Build Docker Image
           command: |
+            cd ~/project
             if [ -z "$DOCKER_REPO" ] || [ -z "$DOCKER_IMAGE_NAME" ] || [ -z "$DOCKER_IMAGE_TAG" ]; then
               echo "Docker environment variables are not set."
               exit 1
             fi
             docker build -t ${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG} .
 
-      # Scan Docker Image with Trivy
+  docker_scan:
+    executor: default
+    steps:
+      - checkout
+
+      # Install Trivy
+      - run:
+          name: Install Trivy
+          command: |
+            sudo apt-get install -y wget apt-transport-https gnupg lsb-release
+            wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+            echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | sudo tee -a /etc/apt/sources.list.d/trivy.list
+            sudo apt-get update
+            sudo apt-get install -y trivy
+
+      # Scan Docker image with Trivy
       - run:
           name: Scan Docker Image
           command: |
             trivy image ${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}
 
-      # Publish Docker Image
+  docker_publish:
+    executor: default
+    steps:
+      - checkout
+
+      # Publish Docker image
       - run:
           name: Publish Docker Image
           command: |
@@ -50,6 +108,18 @@ jobs:
 
 workflows:
   version: 2
-  build:
+  build_and_deploy:
     jobs:
       - setup
+      - sonar_scan:
+          requires:
+            - setup
+      - docker_build:
+          requires:
+            - sonar_scan
+      - docker_scan:
+          requires:
+            - docker_build
+      - docker_publish:
+          requires:
+            - docker_scan
