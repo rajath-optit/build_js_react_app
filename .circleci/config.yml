@@ -17,9 +17,14 @@ jobs:
       - run:
           name: Set Java 17 as Default
           command: |
+            apt-get update
+            apt-get install -y openjdk-17-jdk
+            update-alternatives --install /usr/bin/java java /usr/lib/jvm/java-17-openjdk-amd64/bin/java 1
+            update-alternatives --install /usr/bin/javac javac /usr/lib/jvm/java-17-openjdk-amd64/bin/javac 1
             update-alternatives --set java /usr/lib/jvm/java-17-openjdk-amd64/bin/java
             update-alternatives --set javac /usr/lib/jvm/java-17-openjdk-amd64/bin/javac
             java -version
+
 
       - run:
           name: Build App
