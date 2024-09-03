@@ -3,28 +3,14 @@ version: 2.1
 executors:
   custom-docker:
     docker:
-      - image: bharathoptdocker/nodjs-java17-trivy:latest  # Your custom Docker image with Java 17
+      - image: bharathoptdocker/mycircleci:latest # Use your custom Docker image
 
 jobs:
-  setup:
+  build:
     executor: custom-docker
     steps:
       - checkout
 
-      # Install SonarQube Scanner compatible with Java 17
-      - run:
-          name: Install SonarQube Scanner
-          command: |
-            curl -sSLo sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.7.0.2747.zip
-            unzip sonar-scanner.zip -d /opt
-            export PATH=/opt/sonar-scanner-4.7.0.2747/bin:$PATH
-
-      - run:
-          name: Verify SonarQube Scanner Installation
-          command: |
-            sonar-scanner --version
-
-      # Your build steps here
       - run:
           name: Build App
           command: |
@@ -39,20 +25,9 @@ jobs:
             npm test
 
       - run:
-          name: Execute SonarQube Scan
+          name: Verify SonarQube Scanner Installation
           command: |
-            export SONAR_SCANNER_OPTS="-Xmx1024m"
-            sonar-scanner \
-              -Dsonar.projectKey=myorg24_reactjs \
-              -Dsonar.organization=myorg24 \
-              -Dsonar.projectName=reactjs \
-              -Dsonar.projectVersion=1.0 \
-              -Dsonar.sources=. \
-              -Dsonar.language=js \
-              -Dsonar.host.url=https://sonarcloud.io \
-              -Dsonar.exclusions=node_modules/**,build/** \
-              -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info \
-              -Dsonar.login=$SONAR_TOKEN
+            sonar-scanner --version
 
       - setup_remote_docker:
           docker_layer_caching: true
@@ -61,10 +36,6 @@ jobs:
           name: Build Docker Image
           command: |
             cd ~/project
-            if [ -z "$DOCKER_REPO" ] || [ -z "$DOCKER_IMAGE_NAME" ] || [ -z "$DOCKER_IMAGE_TAG" ]; then
-              echo "Docker environment variables are not set."
-              exit 1
-            fi
             docker build -t ${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG} .
 
       - run:
@@ -75,10 +46,6 @@ jobs:
       - run:
           name: Publish Docker Image
           command: |
-            if [ -z "$DOCKER_USERNAME" ] || [ -z "$DOCKER_PASSWORD" ]; then
-              echo "Docker credentials are not set."
-              exit 1
-            fi
             echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
             docker push ${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}
 
@@ -86,5 +53,4 @@ workflows:
   version: 2
   build:
     jobs:
-      - setup:
-          context: my-organization-context
+      - build
