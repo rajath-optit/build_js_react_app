@@ -10,8 +10,11 @@ jobs:
     executor: custom-docker
     steps:
       - checkout
-
-      # Your build steps here
+      - run:
+          name: Verify Java Version
+          command: |
+            java -version
+    
       - run:
           name: Build App
           command: |
