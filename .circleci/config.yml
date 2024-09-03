@@ -29,13 +29,35 @@ jobs:
           command: |
             sonar-scanner --version
 
+     - run:
+          name: SonarQube Scan
+          command: |
+            export SONAR_SCANNER_OPTS="-Xmx1024m"
+            sonar-scanner \
+              -Dsonar.projectKey=myorg24_reactjs \
+              -Dsonar.organization=myorg24 \
+              -Dsonar.projectName=reactjs \
+              -Dsonar.projectVersion=1.0 \
+              -Dsonar.sources=. \
+              -Dsonar.language=js \
+              -Dsonar.host.url=https://sonarcloud.io \
+              -Dsonar.exclusions=node_modules/**,build/** \
+              -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info \
+              -Dsonar.login=$SONAR_TOKEN
+
       - setup_remote_docker:
           docker_layer_caching: true
+
+     
 
       - run:
           name: Build Docker Image
           command: |
             cd ~/project
+            if [ -z "$DOCKER_REPO" ] || [ -z "$DOCKER_IMAGE_NAME" ] || [ -z "$DOCKER_IMAGE_TAG" ]; then
+              echo "Docker environment variables are not set."
+              exit 1
+            fi
             docker build -t ${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG} .
 
       - run:
@@ -46,6 +68,10 @@ jobs:
       - run:
           name: Publish Docker Image
           command: |
+            if [ -z "$DOCKER_USERNAME" ] || [ -z "$DOCKER_PASSWORD" ]; then
+              echo "Docker credentials are not set."
+              exit 1
+            fi
             echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
             docker push ${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}
 
