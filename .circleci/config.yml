@@ -11,7 +11,9 @@ jobs:
     steps:
       - checkout
 
-      # Set Java 17 as the default Java version
+      - setup_remote_docker:
+          docker_layer_caching: true
+
       - run:
           name: Set Java 17 as Default
           command: |
@@ -52,9 +54,6 @@ jobs:
               -Dsonar.exclusions=node_modules/**,build/** \
               -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info \
               -Dsonar.login=$SONAR_TOKEN
-
-      - setup_remote_docker:
-          docker_layer_caching: true
 
       - run:
           name: Build Docker Image
