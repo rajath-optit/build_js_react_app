@@ -14,16 +14,22 @@ jobs:
       - setup_remote_docker:
           docker_layer_caching: true
 
-      - run:
-          name: Set Java 17 as Default
+     - run:
+          name: Install Java and Fix Certificate Issues
           command: |
             apt-get update
             apt-get install -y openjdk-17-jdk
+            apt-get remove --purge -y ca-certificates-java
+            apt-get install -y ca-certificates-java
+            if [ -d /etc/ssl/certs/java/cacerts ]; then
+              rm -rf /etc/ssl/certs/java/cacerts
+            fi
             update-alternatives --install /usr/bin/java java /usr/lib/jvm/java-17-openjdk-amd64/bin/java 1
             update-alternatives --install /usr/bin/javac javac /usr/lib/jvm/java-17-openjdk-amd64/bin/javac 1
             update-alternatives --set java /usr/lib/jvm/java-17-openjdk-amd64/bin/java
             update-alternatives --set javac /usr/lib/jvm/java-17-openjdk-amd64/bin/javac
             java -version
+
 
 
       - run:
