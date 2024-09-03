@@ -11,27 +11,30 @@ jobs:
     steps:
       - checkout
 
-      - setup_remote_docker:
-          docker_layer_caching: true
-
-     - run:
-          name: Install Java and Fix Certificate Issues
+      # Install Java and fix certificate issues
+      - run:
+          name: Fix Java Certificate Issues
           command: |
             apt-get update
             apt-get install -y openjdk-17-jdk
-            apt-get remove --purge -y ca-certificates-java
-            apt-get install -y ca-certificates-java
-            if [ -d /etc/ssl/certs/java/cacerts ]; then
-              rm -rf /etc/ssl/certs/java/cacerts
+            
+            # Remove and purge ca-certificates-java if it exists
+            if dpkg -l | grep -q ca-certificates-java; then
+              apt-get remove --purge -y ca-certificates-java
+              if [ -d /etc/ssl/certs/java/cacerts ]; then
+                rm -rf /etc/ssl/certs/java/cacerts
+              fi
             fi
-            update-alternatives --install /usr/bin/java java /usr/lib/jvm/java-17-openjdk-amd64/bin/java 1
-            update-alternatives --install /usr/bin/javac javac /usr/lib/jvm/java-17-openjdk-amd64/bin/javac 1
+
+            # Reinstall ca-certificates-java
+            apt-get install -y ca-certificates-java
+
+            # Configure Java alternatives
             update-alternatives --set java /usr/lib/jvm/java-17-openjdk-amd64/bin/java
             update-alternatives --set javac /usr/lib/jvm/java-17-openjdk-amd64/bin/javac
             java -version
 
-
-
+      # Proceed with the rest of your steps
       - run:
           name: Build App
           command: |
@@ -65,6 +68,9 @@ jobs:
               -Dsonar.exclusions=node_modules/**,build/** \
               -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info \
               -Dsonar.login=$SONAR_TOKEN
+
+      - setup_remote_docker:
+          docker_layer_caching: true
 
       - run:
           name: Build Docker Image
