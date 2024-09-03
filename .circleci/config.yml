@@ -29,7 +29,8 @@ jobs:
           name: Verify SonarQube Scanner Installation
           command: |
             sonar-scanner --version
-       - run:
+
+      - run:
           name: SonarQube Scan
           command: |
             export SONAR_SCANNER_OPTS="-Xmx1024m"
@@ -43,7 +44,7 @@ jobs:
               -Dsonar.host.url=https://sonarcloud.io \
               -Dsonar.exclusions=node_modules/**,build/** \
               -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info \
-              -Dsonar.login=6553b3fe573cd0914f393fad368b4eb8bc85f064
+              -Dsonar.login=${SONAR_LOGIN}
 
       - setup_remote_docker:
           docker_layer_caching: true
