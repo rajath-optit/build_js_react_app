@@ -3,38 +3,15 @@ version: 2.1
 executors:
   custom-docker:
     docker:
-      - image: bharathoptdocker/mycircleci:latest # Ensure this image has Java 17 installed
+      - image: bharathoptdocker/nodjs-java17-trivy:latest  # Use your custom Docker image
 
 jobs:
-  build:
+  setup:
     executor: custom-docker
     steps:
       - checkout
 
-      # Install Java and fix certificate issues
-      - run:
-          name: Fix Java Certificate Issues
-          command: |
-            apt-get update
-            apt-get install -y openjdk-17-jdk
-            
-            # Remove and purge ca-certificates-java if it exists
-            if dpkg -l | grep -q ca-certificates-java; then
-              apt-get remove --purge -y ca-certificates-java
-              if [ -d /etc/ssl/certs/java/cacerts ]; then
-                rm -rf /etc/ssl/certs/java/cacerts
-              fi
-            fi
-
-            # Reinstall ca-certificates-java
-            apt-get install -y ca-certificates-java
-
-            # Configure Java alternatives
-            update-alternatives --set java /usr/lib/jvm/java-17-openjdk-amd64/bin/java
-            update-alternatives --set javac /usr/lib/jvm/java-17-openjdk-amd64/bin/javac
-            java -version
-
-      # Proceed with the rest of your steps
+      # Your build steps here
       - run:
           name: Build App
           command: |
@@ -52,22 +29,6 @@ jobs:
           name: Verify SonarQube Scanner Installation
           command: |
             sonar-scanner --version
-
-      - run:
-          name: SonarQube Scan
-          command: |
-            export SONAR_SCANNER_OPTS="-Xmx1024m"
-            sonar-scanner \
-              -Dsonar.projectKey=myorg24_reactjs \
-              -Dsonar.organization=myorg24 \
-              -Dsonar.projectName=reactjs \
-              -Dsonar.projectVersion=1.0 \
-              -Dsonar.sources=. \
-              -Dsonar.language=js \
-              -Dsonar.host.url=https://sonarcloud.io \
-              -Dsonar.exclusions=node_modules/**,build/** \
-              -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info \
-              -Dsonar.login=$SONAR_TOKEN
 
       - setup_remote_docker:
           docker_layer_caching: true
@@ -101,4 +62,4 @@ workflows:
   version: 2
   build:
     jobs:
-      - build
+      - setup
