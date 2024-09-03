@@ -44,7 +44,7 @@ jobs:
               -Dsonar.host.url=https://sonarcloud.io \
               -Dsonar.exclusions=node_modules/**,build/** \
               -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info \
-              -Dsonar.login=${SONAR_LOGIN}
+              -Dsonar.login=6553b3fe573cd0914f393fad368b4eb8bc85f064
 
       - setup_remote_docker:
           docker_layer_caching: true
