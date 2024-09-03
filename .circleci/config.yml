@@ -3,13 +3,21 @@ version: 2.1
 executors:
   custom-docker:
     docker:
-      - image: bharathoptdocker/mycircleci:latest # Use your custom Docker image
+      - image: bharathoptdocker/mycircleci:latest # Ensure this image has Java 17 installed
 
 jobs:
   build:
     executor: custom-docker
     steps:
       - checkout
+
+      # Set Java 17 as the default Java version
+      - run:
+          name: Set Java 17 as Default
+          command: |
+            update-alternatives --set java /usr/lib/jvm/java-17-openjdk-amd64/bin/java
+            update-alternatives --set javac /usr/lib/jvm/java-17-openjdk-amd64/bin/javac
+            java -version
 
       - run:
           name: Build App
